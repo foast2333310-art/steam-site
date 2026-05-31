@@ -209,6 +209,7 @@ async function showDetail(appId) {
       .sort((a, b) => Number(b.percent) - Number(a.percent))
       .slice(0, 10);
 
+    const fullDesc = await translateFr((app.about_the_game || app.detailed_description || '').replace(/<[^>]*>/g, '').slice(0, 5000));
     const searchTexts = [desc, fullDesc || ''];
     const { drm, ac } = detectProtections(searchTexts, appId);
     const fsStatus = checkFamilySharing(searchTexts);
