@@ -28,7 +28,13 @@
         <p>Recherchez des jeux, consultez les prix, le nombre de joueurs et les actualités</p>
       </div>
       <div class="featured">
-        <h2>Jeux populaires</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h2 style="margin:0">Jeux populaires</h2>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="refreshTime" style="font-size:10px;color:var(--text-dim)"></span>
+            <button class="btn" id="refreshBtn" onclick="refreshPrices()" style="font-size:10px;padding:4px 10px">🔄</button>
+          </div>
+        </div>
         <div class="featured-grid" id="featuredGrid"></div>
         <div id="loadMoreContainer" style="text-align:center;margin-top:16px"></div>
       </div>

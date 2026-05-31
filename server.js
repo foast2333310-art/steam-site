@@ -90,7 +90,7 @@ app.get('/api/app/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const cached = getCached(`app_${id}`);
-    if (cached) return res.json(cached);
+    if (cached && !req.query.refresh) return res.json(cached);
     const data = await fetchJson(`${STEAM_STORE_API}/appdetails?appids=${id}&cc=fr&l=fr`);
     const app = data[id];
     if (!app || !app.success) return res.status(404).json({ error: 'App not found' });

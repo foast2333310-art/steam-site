@@ -631,6 +631,7 @@ async function loadNews(appId) {
 
 let allApps = [];
 let loadedCount = 0;
+let lastFetchTime = 0;
 const PAGE_SIZE = 12;
 
 async function loadFeatured() {
@@ -639,6 +640,8 @@ async function loadFeatured() {
     const firstBatch = await Promise.allSettled(POPULAR_IDS.slice(0, 12).map(id => fetchJson(`/api/app/${id}`)));
     allApps = firstBatch.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
     loadedCount = 0;
+    lastFetchTime = Date.now();
+    updateRefreshTime();
     renderFeatured();
     const rest = POPULAR_IDS.slice(12);
     if (rest.length) {
@@ -650,6 +653,36 @@ async function loadFeatured() {
   } catch (err) {
     featuredGrid.innerHTML = '<div style="grid-column:1/-1;color:#ff5555">Erreur de chargement</div>';
   }
+}
+
+function updateRefreshTime() {
+  const el = document.getElementById('refreshTime');
+  if (!el || !lastFetchTime) return;
+  const diff = Date.now() - lastFetchTime;
+  const min = Math.floor(diff / 60000);
+  if (min < 1) el.textContent = 'À l\'instant';
+  else if (min < 60) el.textContent = `Il y a ${min}min`;
+  else el.textContent = `Il y a ${Math.floor(min/60)}h${min%60 ? min%60 + 'min' : ''}`;
+}
+
+async function refreshPrices() {
+  const btn = document.getElementById('refreshBtn');
+  if (btn) btn.textContent = '⏳';
+  featuredGrid.innerHTML = '<div class="loading" style="grid-column:1/-1">Rafraîchissement...</div>';
+  document.getElementById('loadMoreContainer').innerHTML = '';
+  // Force refresh by adding a cache-busting query param
+  const t = Date.now();
+  try {
+    const results = await Promise.allSettled(POPULAR_IDS.map(id => fetchJson(`/api/app/${id}?refresh=1&_=${t}`)));
+    allApps = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+    loadedCount = 0;
+    lastFetchTime = Date.now();
+    updateRefreshTime();
+    renderFeatured();
+  } catch (err) {
+    featuredGrid.innerHTML = '<div style="grid-column:1/-1;color:#ff5555">Erreur</div>';
+  }
+  if (btn) btn.textContent = '🔄';
 }
 
 function renderFeatured() {
