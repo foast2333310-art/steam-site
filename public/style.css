@@ -426,6 +426,15 @@ footer {
   border-radius: var(--radius-lg); padding: 18px; margin-bottom: 12px;
 }
 .settings-card h3 { font-size: 13px; margin-bottom: 6px; }
+.profile-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 4px;
+  cursor: pointer; transition: border-color .2s;
+  font-size: 12px;
+}
+.profile-item:hover { border-color: var(--accent); }
+.profile-active { border-color: var(--accent); background: rgba(71,194,58,0.05); }
 .library-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .library-header h2 { font-size: 16px; }
 .library-stats { font-size: 11px; color: var(--text-muted); }

@@ -297,38 +297,126 @@ function goHome() {
   detailContent.innerHTML = '';
 }
 
-// Settings
+// Profile system
+function getProfiles() {
+  try { return JSON.parse(localStorage.getItem('slimedeals_profiles')) || []; }
+  catch { return []; }
+}
+function saveProfiles(p) { localStorage.setItem('slimedeals_profiles', JSON.stringify(p)); }
+function getActiveProfile() {
+  const id = localStorage.getItem('slimedeals_active_profile');
+  const profiles = getProfiles();
+  return profiles.find(p => p.id === id) || profiles[0] || null;
+}
+function setActiveProfile(id) { localStorage.setItem('slimedeals_active_profile', id); }
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
 function showSettings() {
   hideAllSections();
   const s = document.getElementById('settings');
-  if (s) {
-    s.style.display = 'block';
-    document.getElementById('apiKeyInput').value = localStorage.getItem('steam_api_key') || '';
-    document.getElementById('steamIdInput').value = localStorage.getItem('steam_id') || '';
+  if (!s) return;
+  s.style.display = 'block';
+  renderProfileList();
+  document.getElementById('profileDetail').style.display = 'none';
+}
+
+function renderProfileList() {
+  const profiles = getProfiles();
+  const active = getActiveProfile();
+  const el = document.getElementById('profileList');
+  if (!profiles.length) {
+    el.innerHTML = '<div class="text-muted" style="font-size:12px;padding:6px 0">Aucun profil. Créez-en un !</div>';
+    return;
   }
+  el.innerHTML = profiles.map(p => `
+    <div class="profile-item${active?.id === p.id ? ' profile-active' : ''}" onclick="selectProfile('${p.id}')">
+      <span style="font-weight:600">${escapeHtml(p.name || 'Sans nom')}</span>
+      ${active?.id === p.id ? '<span style="font-size:10px;color:var(--accent)">✓ Actif</span>' : ''}
+      <span style="font-size:10px;color:var(--text-dim)">${p.steamId ? '🟢 lié' : '⚪ non lié'}</span>
+    </div>
+  `).join('');
 }
-function saveApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (key) localStorage.setItem('steam_api_key', key);
-  else localStorage.removeItem('steam_api_key');
-  alert('💾 Clé API enregistrée');
+
+function selectProfile(id) {
+  const profiles = getProfiles();
+  const p = profiles.find(pr => pr.id === id);
+  if (!p) return;
+  setActiveProfile(id);
+  renderProfileList();
+  const detail = document.getElementById('profileDetail');
+  detail.style.display = 'block';
+  document.getElementById('profileDetailTitle').textContent = '📋 ' + (p.name || 'Profil');
+  document.getElementById('profileNameInput').value = p.name || '';
+  document.getElementById('profileSteamIdInput').value = p.steamId || '';
+  document.getElementById('profileApiKeyInput').value = p.apiKey || '';
+  document.getElementById('profileStatus').textContent = '';
+  // Store editing id
+  detail.dataset.editId = id;
 }
-async function saveSteamId() {
-  const val = document.getElementById('steamIdInput').value.trim();
-  const status = document.getElementById('steamIdStatus');
-  if (!val) { status.textContent = ''; localStorage.removeItem('steam_id'); return; }
-  let steamId = val;
-  if (!/^\d{17}$/.test(val)) {
-    status.textContent = '🔍 Résolution du vanity URL...';
-    status.style.color = 'var(--text-muted)';
-    try {
-      const data = await fetchJson(`/api/resolve?vanity=${encodeURIComponent(val)}`);
-      if (data.steamid) { steamId = data.steamid; status.textContent = `✅ Résolu: ${steamId}`; status.style.color = 'var(--accent)'; }
-      else if (data.error) { status.textContent = '❌ ' + data.error; status.style.color = '#ff5555'; return; }
-      else { status.textContent = '❌ Impossible de résoudre ce nom'; status.style.color = '#ff5555'; return; }
-    } catch { status.textContent = '❌ Erreur de résolution'; status.style.color = '#ff5555'; return; }
-  } else { status.textContent = '✅ Steam ID valide'; status.style.color = 'var(--accent)'; }
-  localStorage.setItem('steam_id', steamId);
+
+function createProfile() {
+  const name = document.getElementById('newProfileName').value.trim();
+  if (!name) { alert('Entre un nom pour le profil'); return; }
+  const profiles = getProfiles();
+  const id = genId();
+  profiles.push({ id, name, steamId: '', apiKey: '' });
+  saveProfiles(profiles);
+  document.getElementById('newProfileName').value = '';
+  selectProfile(id);
+}
+
+function saveProfile() {
+  const detail = document.getElementById('profileDetail');
+  const id = detail.dataset.editId;
+  if (!id) return;
+  const profiles = getProfiles();
+  const idx = profiles.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  const name = document.getElementById('profileNameInput').value.trim() || 'Sans nom';
+  let steamId = document.getElementById('profileSteamIdInput').value.trim();
+  const apiKey = document.getElementById('profileApiKeyInput').value.trim();
+  const status = document.getElementById('profileStatus');
+  // Resolve vanity URL if needed
+  if (steamId && !/^\d{17}$/.test(steamId)) {
+    status.textContent = '🔍 Résolution...';
+    fetchJson(`/api/resolve?vanity=${encodeURIComponent(steamId)}`).then(data => {
+      if (data.steamid) {
+        steamId = data.steamid;
+        profiles[idx] = { ...profiles[idx], name, steamId, apiKey };
+        saveProfiles(profiles);
+        document.getElementById('profileSteamIdInput').value = steamId;
+        status.textContent = '✅ Résolu et sauvegardé';
+        status.style.color = 'var(--accent)';
+        renderProfileList();
+      } else {
+        status.textContent = '❌ ' + (data.error || 'Échec résolution');
+        status.style.color = '#ff5555';
+      }
+    }).catch(() => {
+      status.textContent = '❌ Erreur réseau';
+      status.style.color = '#ff5555';
+    });
+    return;
+  }
+  profiles[idx] = { ...profiles[idx], name, steamId, apiKey };
+  saveProfiles(profiles);
+  status.textContent = '✅ Sauvegardé';
+  status.style.color = 'var(--accent)';
+  document.getElementById('profileDetailTitle').textContent = '📋 ' + name;
+  renderProfileList();
+}
+
+function deleteProfile() {
+  const detail = document.getElementById('profileDetail');
+  const id = detail.dataset.editId;
+  if (!id || !confirm('Supprimer ce profil ?')) return;
+  let profiles = getProfiles();
+  profiles = profiles.filter(p => p.id !== id);
+  saveProfiles(profiles);
+  if (getActiveProfile()?.id === id) setActiveProfile(profiles[0]?.id || '');
+  detail.style.display = 'none';
+  renderProfileList();
 }
 
 // Library
@@ -338,22 +426,29 @@ async function showLibrary() {
   if (!lib) return;
   lib.style.display = 'block';
   const c = document.getElementById('libraryContent');
-  const steamId = localStorage.getItem('steam_id');
-  const apiKey = localStorage.getItem('steam_api_key');
-  if (!steamId) {
-    c.innerHTML = '<div class="settings-card"><h3>🔗 Configuration requise</h3><p class="text-muted" style="font-size:12px">Définis ton Steam ID dans les ⚙️ Paramètres pour voir ta bibliothèque.</p></div>';
+  const profile = getActiveProfile();
+  if (!profile || !profile.steamId) {
+    c.innerHTML = '<div class="settings-card"><h3>🔗 Configuration requise</h3><p class="text-muted" style="font-size:12px">Crée un profil et renseigne ton Steam ID dans ⚙️ Paramètres.</p><button class="btn" onclick="showSettings()" style="margin-top:8px">⚙️ Paramètres</button></div>';
     return;
   }
   c.innerHTML = '<div class="loading">Chargement de la bibliothèque...</div>';
   try {
-    const data = await fetchJson(`/api/library/${steamId}?key=${apiKey || ''}`);
+    const data = await fetchJson(`/api/library/${profile.steamId}?key=${profile.apiKey || ''}`);
     if (data.demo) {
       c.innerHTML = demoLibrary();
       return;
     }
-    if (data.error) { c.innerHTML = `<div class="settings-card"><h3>❌ Erreur</h3><p class="text-muted" style="font-size:12px">${escapeHtml(data.error)}</p></div>`; return; }
+    if (data.error) {
+      if (data.error === 'STEAM_API_KEY manquante') {
+        c.innerHTML = '<div class="settings-card"><h3>❌ Clé API manquante</h3><p class="text-muted" style="font-size:12px">Ajoute ta clé API Steam dans le profil ⚙️ pour voir ta vraie bibliothèque.</p></div>';
+        return;
+      }
+      c.innerHTML = `<div class="settings-card"><h3>❌ Erreur</h3><p class="text-muted" style="font-size:12px">${escapeHtml(data.error)}</p></div>`;
+      return;
+    }
     const games = data.games || [];
     if (!games.length) { c.innerHTML = '<div class="settings-card"><p class="text-muted">Aucun jeu trouvé</p></div>'; return; }
+    libraryData = games;
     c.innerHTML = renderLibrary(games);
   } catch (err) {
     c.innerHTML = `<div class="settings-card"><h3>❌ Erreur</h3><p class="text-muted">${escapeHtml(err.message)}</p></div>`;
@@ -487,33 +582,6 @@ async function loadFeatured() {
   } catch (err) {
     featuredGrid.innerHTML = '<div style="grid-column:1/-1;color:#ff5555">Erreur de chargement</div>';
   }
-}
-
-async function loadNews(appId) {
-  try {
-    let news = await fetchJson(`/api/news/${appId}`);
-    const items = (news?.appnews?.newsitems || []).slice(0, 5);
-    const translated = await Promise.all(items.map(async n => ({
-      title: await translateFr(n.title),
-      contents: await translateFr((n.contents || '').replace(/<[^>]*>/g, '').slice(0, 300)),
-      date: n.date
-    })));
-    const section = document.getElementById('newsSection');
-    if (!section) return;
-    if (!translated.length) {
-      section.innerHTML = '<h3>📰 Actualités</h3><div class="text-muted" style="padding:12px 0">Aucune actualité récente</div>';
-      return;
-    }
-    section.innerHTML = '<h3>📰 Actualités</h3><div class="news-list">' +
-      translated.map(n => `
-        <div class="news-item">
-          <div class="ni-title">${escapeHtml(n.title)}</div>
-          <div class="ni-desc">${escapeHtml(n.contents || '')}</div>
-          <div class="ni-date">${new Date(n.date * 1000).toLocaleDateString('fr-FR')}</div>
-        </div>
-      `).join('') +
-    '</div>';
-  } catch {}
 }
 
 loadFeatured();
