@@ -176,6 +176,8 @@ async function showDetail(appId) {
     let priceHtml = '<span class="text-muted">Gratuit</span>';
     let promoHtml = '';
     let cryptoHtml = '';
+    const platforms = app.platforms || {};
+    const reqs = app.pc_requirements || {};
     if (price) {
       const final = (price.final / 100).toFixed(2);
       const initial = (price.initial / 100).toFixed(2);
