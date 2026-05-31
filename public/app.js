@@ -322,45 +322,44 @@ function showProfile() {
   const profiles = getProfiles();
 
   if (active && localStorage.getItem('slimedeals_logged_in') === 'true') {
-    // Connected → show info + button to go to library
     main.innerHTML = `
-      <div class="settings-card" style="text-align:center">
-        <div style="font-size:36px;margin-bottom:8px">👤</div>
-        <h3 style="font-size:16px">${escapeHtml(active.name)}</h3>
-        <div style="font-size:11px;color:var(--text-dim);margin:6px 0">
-          ${active.steamId ? '🟢 Steam lié' : '⚪ Non lié'}
-          ${active.apiKey ? ' · 🔑 Clé API' : ''}
+      <div class="profile-grid">
+        <div class="profile-card">
+          <div class="profile-avatar">👤</div>
+          <div class="profile-name">${escapeHtml(active.name)}</div>
+          <div class="profile-status ${active.steamId ? 'online' : 'offline'}">${active.steamId ? '🟢 Steam lié' : '⚫ Non lié'}${active.apiKey ? ' · 🔑 Clé API' : ''}</div>
+          <div class="profile-actions">
+            <button class="btn" onclick="goToLibrary()">📚 Bibliothèque</button>
+            <button class="btn" style="background:#7a0000" onclick="logout()">🚪 Déconnexion</button>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
-          <button class="btn" onclick="goToLibrary()">📚 Ma Bibliothèque</button>
-          <button class="btn" style="background:#7a0000" onclick="logout()">🚪 Déconnexion</button>
-        </div>
-      </div>
-      <div class="settings-card">
-        <h3>🔗 Liens utiles</h3>
-        <div style="font-size:12px;line-height:1.8">
-          <a href="https://steamcommunity.com/dev/apikey" target="_blank">Créer une clé API Steam →</a><br>
-          <a href="https://steamid.io/" target="_blank">Trouver mon Steam ID →</a>
+        <div class="profile-card">
+          <h3>🔗 Liens utiles</h3>
+          <div class="profile-links">
+            <a href="https://steamcommunity.com/dev/apikey" target="_blank">Créer une clé API Steam →</a><br>
+            <a href="https://steamid.io/" target="_blank">Trouver mon Steam ID →</a>
+          </div>
         </div>
       </div>`;
   } else {
-    // Not connected → show login/create
     main.innerHTML = `
-      <div class="settings-card">
-        <h3>🔑 Se connecter</h3>
-        <input type="text" id="loginName" placeholder="Nom du profil" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
-        <input type="password" id="loginPassword" placeholder="Mot de passe" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
-        <div id="loginStatus" style="font-size:11px;margin:4px 0"></div>
-        <button class="btn" onclick="login()">🔓 Se connecter</button>
-      </div>
-      <div class="settings-card">
-        <h3>👤 Créer un nouveau profil</h3>
-        <input type="text" id="newProfName" placeholder="Nom du profil" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
-        <input type="password" id="newProfPassword" placeholder="Mot de passe" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
-        <input type="text" id="newProfSteamId" placeholder="Steam ID ou vanity URL (optionnel)" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
-        <input type="text" id="newProfApiKey" placeholder="Clé API Steam (optionnelle)" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
-        <div id="createProfStatus" style="font-size:11px;margin:4px 0"></div>
-        <button class="btn" onclick="createAndLogin()">➕ Créer</button>
+      <div class="profile-grid">
+        <div class="profile-card">
+          <h3>🔑 Connexion</h3>
+          <input class="profile-input" type="text" id="loginName" placeholder="Nom du profil">
+          <input class="profile-input" type="password" id="loginPassword" placeholder="Mot de passe">
+          <div id="loginStatus" class="profile-status-text" style="color:#ff5555"></div>
+          <button class="btn" onclick="login()" style="width:100%;margin-top:6px;padding:8px">🔓 Se connecter</button>
+        </div>
+        <div class="profile-card">
+          <h3>➕ Nouveau profil</h3>
+          <input class="profile-input" type="text" id="newProfName" placeholder="Nom du profil">
+          <input class="profile-input" type="password" id="newProfPassword" placeholder="Mot de passe">
+          <input class="profile-input" type="text" id="newProfSteamId" placeholder="Steam ID ou vanity (optionnel)">
+          <input class="profile-input" type="text" id="newProfApiKey" placeholder="Clé API Steam (optionnelle)">
+          <div id="createProfStatus" class="profile-status-text"></div>
+          <button class="btn" onclick="createAndLogin()" style="width:100%;margin-top:6px;padding:8px">➕ Créer</button>
+        </div>
       </div>`;
   }
   updateProfileBtn();

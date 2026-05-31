@@ -434,9 +434,33 @@ footer {
 .tl-desc { font-size: 11px; color: var(--text-muted); }
 .tl-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
 .tl-tag { font-size: 9px; padding: 1px 5px; border-radius: 2px; background: var(--border); color: var(--text-dim); }
-.profile-hero { text-align: center; padding: 20px; background: var(--bg-alt); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 16px; }
-.profile-hero .ph-icon { font-size: 40px; margin-bottom: 8px; }
 .lib-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+
+/* Profile redesigned */
+.profile-grid { display: flex; flex-direction: column; gap: 12px; max-width: 420px; margin: 0 auto; }
+.profile-card {
+  background: linear-gradient(135deg, var(--bg-alt), var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.profile-card:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(71,194,58,0.08); }
+.profile-card h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px; }
+.profile-avatar { font-size: 44px; text-align: center; margin-bottom: 4px; }
+.profile-name { font-size: 18px; font-weight: 700; text-align: center; }
+.profile-status { text-align: center; font-size: 11px; margin: 6px 0 14px; }
+.profile-status.online { color: var(--accent); }
+.profile-status.offline { color: var(--text-dim); }
+.profile-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.profile-actions .btn { flex: 1; min-width: 100px; padding: 8px 12px; text-align: center; }
+.profile-input { width: 100%; padding: 10px 12px; margin: 4px 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; transition: border-color .2s; box-sizing: border-box; }
+.profile-input:focus { border-color: var(--accent); outline: none; }
+.profile-input::placeholder { color: var(--text-dim); font-size: 12px; }
+.profile-divider { height: 1px; background: var(--border); margin: 16px 0; }
+.profile-links { font-size: 12px; line-height: 2; }
+.profile-links a { color: var(--accent); text-decoration: none; transition: opacity .2s; }
+.profile-links a:hover { opacity: 0.8; text-decoration: underline; }
+.profile-status-text { font-size: 11px; margin-top: 4px; }
 
 @media (max-width: 768px) {
   .hero h1 { font-size: 24px; }
