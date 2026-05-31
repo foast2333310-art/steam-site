@@ -221,6 +221,19 @@ nav {
 .featured-card .fc-body { padding: 10px 12px; }
 .featured-card .fc-name { font-size: 13px; font-weight: 500; margin-bottom: 3px; color: var(--text); }
 .featured-card .fc-meta { font-size: 11px; color: var(--text-muted); }
+.featured-card .fc-badge { font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 700; margin-left: 4px; }
+.featured-card .fc-badge.promo { background: var(--accent); color: #fff; }
+.featured-card .fc-badge.critical { background: #7a0000; color: #ff4444; }
+.featured-card .fc-price { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+
+.filter-bar { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 5px 10px; font-size: 11px; border: 1px solid var(--border);
+  border-radius: 6px; background: var(--bg-alt); color: var(--text-dim);
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.filter-btn:hover { border-color: var(--accent); color: var(--text); }
+.filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(71,194,58,0.08); }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
