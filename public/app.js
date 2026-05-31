@@ -631,67 +631,39 @@ async function loadNews(appId) {
 
 let allApps = [];
 let loadedCount = 0;
-let currentFilter = 'all';
 const PAGE_SIZE = 12;
-
-const FILTERS = [
-  { id: 'all', label: '🎮 Tous' },
-  { id: 'promo', label: '🔥 En promo' },
-  { id: 'bigdiscount', label: '💰 -50% ou plus' },
-  { id: 'free', label: '🆓 Gratuit' },
-];
-
-function matchesFilter(app, filter) {
-  if (filter === 'all') return true;
-  const p = app.price_overview;
-  if (!p || p.final == null) return false;
-  if (filter === 'free') return p.final === 0;
-  if (filter === 'promo') return p.discount_percent > 0;
-  if (filter === 'bigdiscount') return p.discount_percent >= 50;
-  return true;
-}
 
 async function loadFeatured() {
   featuredGrid.innerHTML = '<div class="loading" style="grid-column:1/-1">Chargement des jeux populaires...</div>';
-  const fb = document.getElementById('filterBar');
-  if (fb) {
-    fb.innerHTML = FILTERS.map(f =>
-      `<button class="filter-btn${f.id === currentFilter ? ' active' : ''}" onclick="setFilter('${f.id}')">${f.label}</button>`
-    ).join('');
-  }
   try {
-    // Load first 12 immediately
     const firstBatch = await Promise.allSettled(POPULAR_IDS.slice(0, 12).map(id => fetchJson(`/api/app/${id}`)));
     allApps = firstBatch.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
     loadedCount = 0;
     renderFeatured();
-      // Load remaining in background
-      const rest = POPULAR_IDS.slice(12);
-      if (rest.length) {
-        const remaining = await Promise.allSettled(rest.map(id => fetchJson(`/api/app/${id}`)));
-        const more = remaining.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
-        allApps = allApps.concat(more);
-        // Re-render so filter results + voir plus count are accurate
-        renderFeatured();
-      }
+    const rest = POPULAR_IDS.slice(12);
+    if (rest.length) {
+      const remaining = await Promise.allSettled(rest.map(id => fetchJson(`/api/app/${id}`)));
+      const more = remaining.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+      allApps = allApps.concat(more);
+      renderFeatured();
+    }
   } catch (err) {
     featuredGrid.innerHTML = '<div style="grid-column:1/-1;color:#ff5555">Erreur de chargement</div>';
   }
 }
 
 function renderFeatured() {
-  const filtered = allApps.filter(a => matchesFilter(a, currentFilter));
-  const end = Math.min(loadedCount + PAGE_SIZE, filtered.length);
-  const toShow = filtered.slice(0, end);
-  
-  if (!toShow.length && filtered.length === 0) {
-    featuredGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-dim);font-size:13px">Aucun jeu ne correspond à ce filtre</div>';
+  const end = Math.min(loadedCount + PAGE_SIZE, allApps.length);
+  const toShow = allApps.slice(0, end);
+
+  if (!toShow.length) {
+    featuredGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-dim);font-size:13px">Aucun jeu trouvé</div>';
     const container = document.getElementById('loadMoreContainer');
     if (container) container.innerHTML = '';
     loadedCount = 0;
     return;
   }
-  
+
   featuredGrid.innerHTML = toShow.map(app => {
     const p = app.price_overview;
     let badgeHtml = '';
@@ -717,12 +689,12 @@ function renderFeatured() {
   }).join('');
 
   loadedCount = end;
-  const remaining = filtered.length - loadedCount;
+  const remaining = allApps.length - loadedCount;
   const container = document.getElementById('loadMoreContainer');
   if (container) {
     if (remaining > 0) {
       container.innerHTML = `<button class="btn" onclick="loadMore()" style="padding:8px 24px">Voir plus (${remaining})</button>`;
-    } else if (filtered.length > PAGE_SIZE) {
+    } else if (allApps.length > PAGE_SIZE) {
       container.innerHTML = '<span style="font-size:11px;color:var(--text-dim)">Tous les jeux sont affichés</span>';
     } else {
       container.innerHTML = '';
@@ -731,18 +703,6 @@ function renderFeatured() {
 }
 
 function loadMore() {
-  renderFeatured();
-}
-
-function setFilter(id) {
-  currentFilter = id;
-  loadedCount = 0;
-  const fb = document.getElementById('filterBar');
-  if (fb) {
-    fb.innerHTML = FILTERS.map(f =>
-      `<button class="filter-btn${f.id === id ? ' active' : ''}" onclick="setFilter('${f.id}')">${f.label}</button>`
-    ).join('');
-  }
   renderFeatured();
 }
 

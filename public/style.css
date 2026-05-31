@@ -226,15 +226,6 @@ nav {
 .featured-card .fc-badge.critical { background: #7a0000; color: #ff4444; }
 .featured-card .fc-price { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
 
-.filter-bar { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
-.filter-btn {
-  padding: 5px 10px; font-size: 11px; border: 1px solid var(--border);
-  border-radius: 6px; background: var(--bg-alt); color: var(--text-dim);
-  cursor: pointer; transition: all .15s; white-space: nowrap;
-}
-.filter-btn:hover { border-color: var(--accent); color: var(--text); }
-.filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(71,194,58,0.08); }
-
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
