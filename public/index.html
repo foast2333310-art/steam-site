@@ -11,8 +11,7 @@
     <div class="nav-inner">
       <div class="logo" onclick="goHome()" style="cursor:pointer">SlimeDeals</div>
       <div class="nav-links">
-        <span class="nav-link" onclick="showLibrary()">📚 Bibliothèque</span>
-        <span class="nav-link" onclick="showSettings()">⚙️</span>
+        <span class="nav-link" id="profileBtn" onclick="showProfile()">👤 Profil</span>
       </div>
       <div class="nav-search">
         <input type="text" id="navSearch" placeholder="Rechercher un jeu..." autocomplete="off">
@@ -79,44 +78,24 @@
       </div>
     </section>
 
-    <section id="library" style="display:none">
+    <section id="profile" style="display:none">
       <button class="back-btn" onclick="goHome()">← Retour</button>
-      <div id="libraryContent"></div>
+      <div id="profileContent">
+        <div class="profile-hero">
+          <div class="ph-icon">👤</div>
+          <h2>Mon Profil Steam</h2>
+          <p class="text-muted" style="font-size:13px">Connecte-toi avec ton compte Steam pour voir ta bibliothèque et ton temps de jeu.</p>
+        </div>
+        <div id="profileMain"></div>
+      </div>
     </section>
 
-    <section id="settings" style="display:none">
-      <button class="back-btn" onclick="goHome()">← Retour</button>
-      <div id="settingsContent">
-        <div class="settings-card">
-          <h3>👥 Profils</h3>
-          <p class="text-muted" style="font-size:12px">Créez un profil pour lier votre compte Steam. Chaque profil a sa propre clé API et son Steam ID.</p>
-          <div id="profileList" style="margin:8px 0"></div>
-          <div style="display:flex;gap:6px;margin-top:8px">
-            <input type="text" id="newProfileName" placeholder="Nom du profil (ex: Mon compte)" style="flex:1;padding:7px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
-            <button class="btn" onclick="createProfile()">➕ Créer</button>
-          </div>
-        </div>
-        <div id="profileDetail" style="display:none">
-          <div class="settings-card">
-            <h3 id="profileDetailTitle">📋 Profil</h3>
-            <input type="text" id="profileNameInput" placeholder="Nom du profil" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
-            <input type="text" id="profileSteamIdInput" placeholder="Steam ID ou vanity URL" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
-            <input type="text" id="profileApiKeyInput" placeholder="Clé API Steam (optionnelle)" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
-            <div id="profileStatus" style="margin:4px 0;font-size:11px"></div>
-            <div style="display:flex;gap:6px;margin-top:6px">
-              <button class="btn" onclick="saveProfile()">💾 Sauvegarder</button>
-              <button class="btn" style="background:#7a0000" onclick="deleteProfile()">🗑️ Supprimer</button>
-            </div>
-          </div>
-        </div>
-        <div class="settings-card">
-          <h3>🔗 Liens utiles</h3>
-          <div style="font-size:12px;line-height:1.8">
-            <a href="https://steamcommunity.com/dev/apikey" target="_blank">Créer une clé API Steam →</a><br>
-            <a href="https://steamid.io/" target="_blank">Trouver mon Steam ID →</a>
-          </div>
-        </div>
+    <section id="library" style="display:none">
+      <div class="lib-nav">
+        <button class="back-btn" onclick="goHome()">← Accueil</button>
+        <span class="nav-link" onclick="showProfile()" style="font-size:12px">👤 Changer de profil</span>
       </div>
+      <div id="libraryContent"></div>
     </section>
 
     <section id="detail" style="display:none">

@@ -462,6 +462,9 @@ footer {
 .tl-desc { font-size: 11px; color: var(--text-muted); }
 .tl-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
 .tl-tag { font-size: 9px; padding: 1px 5px; border-radius: 2px; background: var(--border); color: var(--text-dim); }
+.profile-hero { text-align: center; padding: 20px; background: var(--bg-alt); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 16px; }
+.profile-hero .ph-icon { font-size: 40px; margin-bottom: 8px; }
+.lib-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 
 @media (max-width: 768px) {
   .hero h1 { font-size: 24px; }

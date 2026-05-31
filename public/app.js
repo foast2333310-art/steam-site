@@ -287,8 +287,168 @@ function hideAllSections() {
   navResults.classList.remove('show');
   homeSection.style.display = 'none';
   detailSection.style.display = 'none';
-  const lib = document.getElementById('library'); if (lib) lib.style.display = 'none';
-  const set = document.getElementById('settings'); if (set) set.style.display = 'none';
+  const p = document.getElementById('profile'); if (p) p.style.display = 'none';
+  const l = document.getElementById('library'); if (l) l.style.display = 'none';
+}
+
+function goHome() {
+  hideAllSections();
+  homeSection.style.display = 'block';
+  detailContent.innerHTML = '';
+}
+
+// Profile system (localStorage)
+function getProfiles() {
+  try { return JSON.parse(localStorage.getItem('slimedeals_profiles')) || []; }
+  catch { return []; }
+}
+function saveProfiles(p) { localStorage.setItem('slimedeals_profiles', JSON.stringify(p)); }
+function getActiveProfile() {
+  const id = localStorage.getItem('slimedeals_active_profile');
+  const profiles = getProfiles();
+  return profiles.find(p => p.id === id) || null;
+}
+function setActiveProfile(id) { localStorage.setItem('slimedeals_active_profile', id); }
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+function showProfile() {
+  hideAllSections();
+  const section = document.getElementById('profile');
+  if (!section) return;
+  section.style.display = 'block';
+  const main = document.getElementById('profileMain');
+  const active = getActiveProfile();
+  const profiles = getProfiles();
+
+  if (active) {
+    // Connected → show info + button to go to library
+    main.innerHTML = `
+      <div class="settings-card" style="text-align:center">
+        <div style="font-size:36px;margin-bottom:8px">👤</div>
+        <h3 style="font-size:16px">${escapeHtml(active.name)}</h3>
+        <div style="font-size:11px;color:var(--text-dim);margin:6px 0">
+          ${active.steamId ? '🟢 Steam lié' : '⚪ Non lié'}
+          ${active.apiKey ? ' · 🔑 Clé API' : ''}
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+          <button class="btn" onclick="goToLibrary()">📚 Ma Bibliothèque</button>
+          <button class="btn" style="background:#7a0000" onclick="logout()">🚪 Déconnexion</button>
+        </div>
+      </div>
+      ${profiles.length > 1 ? `
+      <div class="settings-card">
+        <h3>🔄 Changer de profil</h3>
+        <div style="margin-top:8px">${profiles.filter(p => p.id !== active.id).map(p => `
+          <div class="profile-item" onclick="switchToProfile('${p.id}')">
+            <span>${escapeHtml(p.name)}</span>
+            <span style="font-size:10px;color:var(--text-dim)">${p.steamId ? '🟢' : '⚪'}</span>
+          </div>
+        `).join('')}</div>
+      </div>` : ''}
+      <div class="settings-card">
+        <h3>🔗 Liens utiles</h3>
+        <div style="font-size:12px;line-height:1.8">
+          <a href="https://steamcommunity.com/dev/apikey" target="_blank">Créer une clé API Steam →</a><br>
+          <a href="https://steamid.io/" target="_blank">Trouver mon Steam ID →</a>
+        </div>
+      </div>`;
+  } else {
+    // Not connected → show login/create
+    main.innerHTML = `
+      <div class="settings-card">
+        <h3>🔑 Se connecter</h3>
+        <p class="text-muted" style="font-size:12px">Sélectionne un profil existant :</p>
+        ${profiles.length ? profiles.map(p => `
+          <div class="profile-item" onclick="switchToProfile('${p.id}')">
+            <span style="font-weight:600">${escapeHtml(p.name)}</span>
+            <span style="font-size:10px;color:var(--text-dim)">${p.steamId ? '🟢 lié' : '⚪ non lié'}</span>
+          </div>
+        `).join('') : '<div class="text-muted" style="font-size:12px;padding:8px 0">Aucun profil pour le moment.</div>'}
+      </div>
+      <div class="settings-card">
+        <h3>👤 Créer un nouveau profil</h3>
+        <input type="text" id="newProfName" placeholder="Nom du profil (ex: Mon compte)" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
+        <input type="text" id="newProfSteamId" placeholder="Steam ID ou vanity URL (ex: foast)" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
+        <input type="text" id="newProfApiKey" placeholder="Clé API Steam (optionnelle)" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
+        <div id="createProfStatus" style="font-size:11px;margin:4px 0"></div>
+        <button class="btn" onclick="createAndLogin()">➕ Créer et se connecter</button>
+      </div>`;
+  }
+  updateProfileBtn();
+}
+
+function switchToProfile(id) {
+  setActiveProfile(id);
+  const profile = getActiveProfile();
+  if (profile && profile.steamId) goToLibrary();
+  else showProfile();
+}
+
+function logout() {
+  localStorage.removeItem('slimedeals_active_profile');
+  showProfile();
+}
+
+async function createAndLogin() {
+  const name = document.getElementById('newProfName').value.trim() || 'Mon profil';
+  let steamId = document.getElementById('newProfSteamId').value.trim();
+  const apiKey = document.getElementById('newProfApiKey').value.trim();
+  const status = document.getElementById('createProfStatus');
+  if (!steamId) { status.textContent = '❌ Entre ton Steam ID'; status.style.color = '#ff5555'; return; }
+  status.textContent = '🔍 Résolution...'; status.style.color = 'var(--text-muted)';
+  // Resolve vanity
+  if (!/^\d{17}$/.test(steamId)) {
+    try {
+      const data = await fetchJson(`/api/resolve?vanity=${encodeURIComponent(steamId)}`);
+      if (data.steamid) { steamId = data.steamid; }
+      else { status.textContent = '❌ ' + (data.error || 'Échec résolution'); status.style.color = '#ff5555'; return; }
+    } catch { status.textContent = '❌ Erreur réseau'; status.style.color = '#ff5555'; return; }
+  }
+  const profiles = getProfiles();
+  const id = genId();
+  profiles.push({ id, name, steamId, apiKey });
+  saveProfiles(profiles);
+  setActiveProfile(id);
+  goToLibrary();
+}
+
+function updateProfileBtn() {
+  const btn = document.getElementById('profileBtn');
+  const active = getActiveProfile();
+  if (btn) btn.textContent = active ? `👤 ${active.name}` : '👤 Profil';
+}
+
+function goToLibrary() {
+  hideAllSections();
+  const lib = document.getElementById('library');
+  if (!lib) return;
+  lib.style.display = 'block';
+  loadLibrary();
+}
+
+// Library
+async function loadLibrary() {
+  const c = document.getElementById('libraryContent');
+  const profile = getActiveProfile();
+  if (!profile || !profile.steamId) {
+    c.innerHTML = '<div class="settings-card"><p class="text-muted">Aucun Steam ID lié au profil. <span class="nav-link" onclick="showProfile()" style="font-size:12px">Configurer →</span></p></div>';
+    return;
+  }
+  c.innerHTML = '<div class="loading">Chargement de la bibliothèque...</div>';
+  try {
+    const data = await fetchJson(`/api/library/${profile.steamId}?key=${profile.apiKey || ''}`);
+    if (data.demo || data.error === 'STEAM_API_KEY manquante') {
+      c.innerHTML = `<div class="settings-card"><h3>🎮 Bibliothèque (démo)</h3><p class="text-muted" style="font-size:12px">Ajoute ta clé API Steam dans le profil pour voir ta vraie bibliothèque.</p><button class="btn" onclick="showProfile()" style="margin-top:8px">⚙️ Modifier le profil</button></div>` + demoLibrary();
+      return;
+    }
+    if (data.error) { c.innerHTML = `<div class="settings-card"><h3>❌ Erreur</h3><p class="text-muted">${escapeHtml(data.error)}</p></div>`; return; }
+    const games = data.games || [];
+    if (!games.length) { c.innerHTML = '<div class="settings-card"><p class="text-muted">Aucun jeu trouvé</p></div>'; return; }
+    libraryData = games;
+    c.innerHTML = renderLibrary(games);
+  } catch (err) {
+    c.innerHTML = `<div class="settings-card"><h3>❌ Erreur</h3><p class="text-muted">${escapeHtml(err.message)}</p></div>`;
+  }
 }
 
 function goHome() {
@@ -586,3 +746,4 @@ async function loadFeatured() {
 
 loadFeatured();
 loadCryptoPrices();
+updateProfileBtn();
