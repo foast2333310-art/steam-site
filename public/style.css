@@ -395,7 +395,7 @@ footer {
 .btn:hover { filter: brightness(1.2); }
 .settings-card {
   background: var(--bg-alt); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); padding: 18px; margin-bottom: 12px;
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
 }
 .settings-card h3 { font-size: 13px; margin-bottom: 6px; }
 .profile-item {
@@ -407,24 +407,63 @@ footer {
 }
 .profile-item:hover { border-color: var(--accent); }
 .profile-active { border-color: var(--accent); background: rgba(71,194,58,0.05); }
-.library-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.library-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
 .library-header h2 { font-size: 16px; }
 .library-stats { font-size: 11px; color: var(--text-muted); }
-.lib-game {
-  display: flex; align-items: center; gap: 10px;
+
+.lib-stats-bar {
+  display: flex; gap: 16px; margin-bottom: 16px;
   background: var(--bg-alt); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 8px 10px;
-  margin-bottom: 4px; cursor: pointer;
-  transition: border-color .2s;
+  border-radius: 10px; padding: 14px 18px;
 }
-.lib-game:hover { border-color: var(--accent); }
-.lib-game img { width: 40px; height: 19px; border-radius: 2px; object-fit: cover; }
+.lib-stat-item { flex: 1; text-align: center; }
+.lib-stat-value { font-size: 20px; font-weight: 700; color: var(--accent); }
+.lib-stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+.lib-controls {
+  display: flex; gap: 8px; margin-bottom: 12px; align-items: center;
+}
+.lib-controls input {
+  flex: 1; padding: 10px 12px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-size: 12px; transition: border-color .2s;
+}
+.lib-controls input:focus { border-color: var(--accent); outline: none; }
+.lib-controls input::placeholder { color: var(--text-dim); }
+.lib-sort-btn {
+  font-size: 11px; padding: 8px 12px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text-dim); cursor: pointer; transition: all .15s;
+  white-space: nowrap;
+}
+.lib-sort-btn:hover { border-color: var(--accent); color: var(--text); }
+.lib-sort-btn.active { border-color: var(--accent); color: var(--accent); }
+
+.lib-game {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-alt); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px;
+  margin-bottom: 6px; cursor: pointer;
+  transition: border-color .2s, box-shadow .2s, transform .15s;
+}
+.lib-game:hover {
+  border-color: var(--accent); box-shadow: 0 2px 12px rgba(71,194,58,0.06);
+  transform: translateX(3px);
+}
+.lib-game img {
+  width: 60px; height: 28px; border-radius: 4px; object-fit: cover;
+  flex-shrink: 0;
+}
 .lib-info { flex: 1; min-width: 0; }
-.lib-name { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lib-bar { height: 4px; background: #1a1a1a; border-radius: 2px; margin-top: 4px; position: relative; }
-.lib-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); }
-.lib-hours { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
-.lib-search { width: 100%; padding: 8px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 12px; }
+.lib-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-bar { height: 6px; background: #1a1a1a; border-radius: 3px; margin-top: 6px; position: relative; overflow: hidden; }
+.lib-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-hover, #5dd84e)); transition: width .3s ease; }
+.lib-hours { font-size: 12px; color: var(--text-dim); white-space: nowrap; font-weight: 600; flex-shrink: 0; }
+.lib-hours strong { color: var(--accent); }
 .timeline { position: relative; padding-left: 20px; }
 .timeline::before { content: ''; position: absolute; left: 5px; top: 0; bottom: 0; width: 2px; background: var(--border); }
 .tl-item { position: relative; margin-bottom: 16px; }

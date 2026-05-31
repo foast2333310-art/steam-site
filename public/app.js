@@ -456,22 +456,45 @@ async function loadLibrary() {
 
 function demoLibrary() {
   const demo = [
-    { name: 'Counter-Strike 2', appid: 730, playtime_forever: 1234, playtime_2weeks: 12, img: 'https://steamcdn-a.akamaihd.net/steam/apps/730/header.jpg' },
-    { name: 'Dota 2', appid: 570, playtime_forever: 892, playtime_2weeks: 0, img: 'https://steamcdn-a.akamaihd.net/steam/apps/570/header.jpg' },
-    { name: 'Hogwarts Legacy', appid: 990080, playtime_forever: 67, playtime_2weeks: 8, img: 'https://steamcdn-a.akamaihd.net/steam/apps/990080/header.jpg' },
-    { name: 'Team Fortress 2', appid: 440, playtime_forever: 456, playtime_2weeks: 3, img: 'https://steamcdn-a.akamaihd.net/steam/apps/440/header.jpg' },
+    { name: 'Counter-Strike 2', appid: 730, playtime_forever: 74040, playtime_2weeks: 720, img: 'https://steamcdn-a.akamaihd.net/steam/apps/730/header.jpg' },
+    { name: 'Dota 2', appid: 570, playtime_forever: 53520, playtime_2weeks: 0, img: 'https://steamcdn-a.akamaihd.net/steam/apps/570/header.jpg' },
+    { name: 'Hogwarts Legacy', appid: 990080, playtime_forever: 4020, playtime_2weeks: 480, img: 'https://steamcdn-a.akamaihd.net/steam/apps/990080/header.jpg' },
+    { name: 'Team Fortress 2', appid: 440, playtime_forever: 27360, playtime_2weeks: 180, img: 'https://steamcdn-a.akamaihd.net/steam/apps/440/header.jpg' },
   ];
-  return `<div class="settings-card"><h3>🎮 Bibliothèque (démo)</h3><p class="text-muted" style="font-size:12px">Ajoute ta clé API Steam dans ⚙️ Paramètres pour voir ta vraie bibliothèque.</p></div><div class="library-header"><h2>Mes jeux</h2><span class="library-stats">${demo.length} jeux — ${demo.reduce((s,g) => s + g.playtime_forever, 0)}h total</span></div><input class="lib-search" type="text" id="libSearch" placeholder="Filtrer..." oninput="filterLibrary()">${demo.map(g => renderLibGame(g)).join('')}`;
+  const total = demo.length;
+  const totalMin = demo.reduce((s,g) => s + g.playtime_forever, 0);
+  const avg = ((totalMin / total) / 60).toFixed(1);
+  return `<div class="settings-card"><h3>🎮 Bibliothèque (démo)</h3><p class="text-muted" style="font-size:12px">Ajoute ta clé API Steam dans ton profil pour voir ta vraie bibliothèque.</p></div>
+    <div class="library-header"><h2>📚 Jeux (démo)</h2><span class="library-stats">${total} jeux</span></div>
+    <div class="lib-stats-bar">
+      <div class="lib-stat-item"><div class="lib-stat-value">${total}</div><div class="lib-stat-label">Jeux</div></div>
+      <div class="lib-stat-item"><div class="lib-stat-value">${(totalMin/60).toFixed(0)}h</div><div class="lib-stat-label">Total</div></div>
+      <div class="lib-stat-item"><div class="lib-stat-value">${avg}h</div><div class="lib-stat-label">Moyenne</div></div>
+    </div>
+    <div class="lib-controls">
+      <input type="text" id="libSearch" placeholder="Filtrer les jeux..." oninput="filterLibrary()">
+    </div>
+    ${demo.map(g => renderLibGame(g)).join('')}`;
 }
 
 function renderLibrary(games) {
   const total = games.length;
-  const totalHours = games.reduce((s, g) => s + (g.playtime_forever || 0), 0);
+  const totalMinutes = games.reduce((s, g) => s + (g.playtime_forever || 0), 0);
+  const totalHours = (totalMinutes / 60).toFixed(0);
+  const avg = total > 0 ? (totalMinutes / total / 60).toFixed(1) : 0;
   const sort = (games, key) => games.sort((a, b) => (b[key] || 0) - (a[key] || 0));
   const sorted = sort([...games], 'playtime_forever');
-  return `<div class="library-header"><h2>📚 Ma Bibliothèque</h2><span class="library-stats">${total} jeux — ${(totalHours/60).toFixed(0)}h total</span></div>
-    <input class="lib-search" type="text" id="libSearch" placeholder="Filtrer..." oninput="filterLibrary()">
-    <div class="lib-sort" style="font-size:11px;color:var(--text-dim);margin-bottom:8px">Trier: <span class="nav-link" onclick="sortLibrary('playtime')" style="font-size:11px">⏱️ Temps</span> • <span class="nav-link" onclick="sortLibrary('name')" style="font-size:11px">🔤 Nom</span></div>
+  return `<div class="library-header"><h2>📚 Ma Bibliothèque</h2><span class="library-stats">${total} jeux</span></div>
+    <div class="lib-stats-bar">
+      <div class="lib-stat-item"><div class="lib-stat-value">${total}</div><div class="lib-stat-label">Jeux</div></div>
+      <div class="lib-stat-item"><div class="lib-stat-value">${totalHours}h</div><div class="lib-stat-label">Total</div></div>
+      <div class="lib-stat-item"><div class="lib-stat-value">${avg}h</div><div class="lib-stat-label">Moyenne</div></div>
+    </div>
+    <div class="lib-controls">
+      <input type="text" id="libSearch" placeholder="Filtrer les jeux..." oninput="filterLibrary()">
+      <button class="lib-sort-btn active" id="sortTime" onclick="sortLibrary('playtime')">⏱ Temps</button>
+      <button class="lib-sort-btn" id="sortName" onclick="sortLibrary('name')">🔤 Nom</button>
+    </div>
     <div id="libList">${sorted.map(g => renderLibGame(g)).join('')}</div>`;
 }
 
@@ -480,18 +503,23 @@ function renderLibGame(g) {
   const maxH = 500;
   const pct = Math.min((h / maxH) * 100, 100);
   const img = g.img || `https://steamcdn-a.akamaihd.net/steam/apps/${g.appid}/header.jpg`;
+  const h2w = g.playtime_2weeks ? ` · <span style="color:var(--accent)">+${(g.playtime_2weeks/60).toFixed(0)}h</span> 2 sem` : '';
   return `<div class="lib-game" onclick="showDetail(${g.appid})">
     <img src="${img}" alt="" loading="lazy" onerror="this.style.display='none'">
     <div class="lib-info">
       <div class="lib-name">${escapeHtml(g.name)}</div>
       <div class="lib-bar"><div class="lib-bar-fill" style="width:${pct}%"></div></div>
     </div>
-    <span class="lib-hours">${h.toFixed(0)}h</span>
+    <span class="lib-hours"><strong>${h.toFixed(0)}h</strong>${h2w}</span>
   </div>`;
 }
 
 let libraryData = [];
+let sortMode = 'playtime';
 async function sortLibrary(by) {
+  sortMode = by;
+  document.getElementById('sortTime').className = 'lib-sort-btn' + (by === 'playtime' ? ' active' : '');
+  document.getElementById('sortName').className = 'lib-sort-btn' + (by === 'name' ? ' active' : '');
   const c = document.getElementById('libraryContent');
   if (!libraryData.length) return;
   let sorted;
