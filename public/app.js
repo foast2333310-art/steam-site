@@ -665,24 +665,15 @@ async function loadFeatured() {
     allApps = firstBatch.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
     loadedCount = 0;
     renderFeatured();
-    // Load remaining in background
-    const rest = POPULAR_IDS.slice(12);
-    if (rest.length) {
-      const remaining = await Promise.allSettled(rest.map(id => fetchJson(`/api/app/${id}`)));
-      const more = remaining.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
-      allApps = allApps.concat(more);
-      // Re-render with full data if filter is active (might have more matches now)
-      if (currentFilter !== 'all') renderFeatured();
-      else {
-        // Update load more count
-        const container = document.getElementById('loadMoreContainer');
-        const filtered = allApps.filter(a => matchesFilter(a, currentFilter));
-        const remainingCount = filtered.length - loadedCount;
-        if (container && remainingCount > 0) {
-          container.innerHTML = `<button class="btn" onclick="loadMore()" style="padding:8px 24px">Voir plus (${remainingCount})</button>`;
-        }
+      // Load remaining in background
+      const rest = POPULAR_IDS.slice(12);
+      if (rest.length) {
+        const remaining = await Promise.allSettled(rest.map(id => fetchJson(`/api/app/${id}`)));
+        const more = remaining.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+        allApps = allApps.concat(more);
+        // Re-render so filter results + voir plus count are accurate
+        renderFeatured();
       }
-    }
   } catch (err) {
     featuredGrid.innerHTML = '<div style="grid-column:1/-1;color:#ff5555">Erreur de chargement</div>';
   }
@@ -690,7 +681,17 @@ async function loadFeatured() {
 
 function renderFeatured() {
   const filtered = allApps.filter(a => matchesFilter(a, currentFilter));
-  const toShow = filtered.slice(0, loadedCount + PAGE_SIZE);
+  const end = Math.min(loadedCount + PAGE_SIZE, filtered.length);
+  const toShow = filtered.slice(0, end);
+  
+  if (!toShow.length && filtered.length === 0) {
+    featuredGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-dim);font-size:13px">Aucun jeu ne correspond à ce filtre</div>';
+    const container = document.getElementById('loadMoreContainer');
+    if (container) container.innerHTML = '';
+    loadedCount = 0;
+    return;
+  }
+  
   featuredGrid.innerHTML = toShow.map(app => {
     const p = app.price_overview;
     let badgeHtml = '';
@@ -715,14 +716,16 @@ function renderFeatured() {
     </div>`;
   }).join('');
 
-  loadedCount += PAGE_SIZE;
-  const remaining = allApps.filter(a => matchesFilter(a, currentFilter)).length - loadedCount;
+  loadedCount = end;
+  const remaining = filtered.length - loadedCount;
   const container = document.getElementById('loadMoreContainer');
   if (container) {
     if (remaining > 0) {
       container.innerHTML = `<button class="btn" onclick="loadMore()" style="padding:8px 24px">Voir plus (${remaining})</button>`;
+    } else if (filtered.length > PAGE_SIZE) {
+      container.innerHTML = '<span style="font-size:11px;color:var(--text-dim)">Tous les jeux sont affichés</span>';
     } else {
-      container.innerHTML = allApps.length > PAGE_SIZE ? '<span style="font-size:11px;color:var(--text-dim)">Tous les jeux sont affichés</span>' : '';
+      container.innerHTML = '';
     }
   }
 }
