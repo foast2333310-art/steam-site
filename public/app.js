@@ -11,26 +11,11 @@ let btcPrice = 0, ethPrice = 0;
 
 const POPULAR_IDS = [730, 570, 440, 550, 578080, 1599340, 236390, 252490, 1172470, 108600, 271590, 431960, 413150, 105600, 322330, 291550, 49520, 232050, 250900, 1222670, 1091500, 238960, 892970, 1151340, 367520, 427520, 945360, 289070, 444200, 1238810, 648800, 386360, 359550, 346110, 1517290, 275850, 377160, 990080, 2050650, 1446780, 1245620, 553850, 381210, 883710, 437530, 814380, 2357570, 2823260];
 
-let denuvoList = [];
-let anticheatDb = {};
-
 // Theme
 themeBtn.addEventListener('click', () => {
   document.body.classList.toggle('light');
   themeBtn.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
 });
-
-let dbReady = false;
-
-async function loadDatabases() {
-  try {
-    [denuvoList, anticheatDb] = await Promise.all([
-      fetchJson('/api/denuvo'),
-      fetchJson('/api/anticheat')
-    ]);
-  } catch (e) { denuvoList = []; anticheatDb = {}; }
-  dbReady = true;
-}
 
 async function loadCryptoPrices() {
   try {
@@ -39,28 +24,6 @@ async function loadCryptoPrices() {
     ethPrice = data.ethereum?.eur || 0;
   } catch {}
 }
-
-const DRM_KEYWORDS = [
-  { name: 'Denuvo', pattern: /denuvo/i },
-  { name: 'VMProtect', pattern: /vmprotect/i },
-  { name: 'NProtect', pattern: /nprotect|gameguard/i },
-  { name: 'StarForce', pattern: /starforce/i },
-  { name: 'SecuROM', pattern: /securom/i },
-  { name: 'SafeDisc', pattern: /safedisc/i },
-];
-
-const AC_KEYWORDS = [
-  { name: 'Easy Anti-Cheat', pattern: /easy\s*anti[-\s]?(cheat|triche)|easyanticheat|eac/i },
-  { name: 'BattlEye', pattern: /battleye/i },
-  { name: 'Epic Online Services', pattern: /epic\s*online\s*services|epic.*eos|eos.*epic/i },
-  { name: 'nProtect GameGuard', pattern: /nprotect|gameguard/i },
-  { name: 'Valve Anti-Cheat', pattern: /valve\s*anti[-\s]?(cheat|triche)|vac/i },
-  { name: 'PunkBuster', pattern: /punkbuster/i },
-  { name: 'FaceIt', pattern: /faceit/i },
-  { name: 'RICOCHET', pattern: /ricochet/i },
-  { name: 'Xbox Live', pattern: /xbox\s*live/i },
-  { name: 'PlayStation Network', pattern: /playstation\s*network|psn/i },
-];
 
 async function fetchJson(url) {
   const res = await fetch(url);
@@ -74,31 +37,6 @@ async function translateFr(text) {
     const data = await fetchJson(`/api/translate?text=${encodeURIComponent(text.slice(0, 5000))}`);
     return data.text || text;
   } catch { return text; }
-}
-
-function detectProtections(texts, appId) {
-  const drm = [];
-  const ac = [];
-  const id = Number(appId);
-  if (denuvoList.includes(id)) drm.push('Denuvo');
-  if (anticheatDb.easy_anti_cheat?.includes(id) && !ac.includes('Easy Anti-Cheat')) ac.push('Easy Anti-Cheat');
-  for (const { name, pattern } of DRM_KEYWORDS) {
-    if (drm.includes(name)) continue;
-    for (const text of texts) { if (text && pattern.test(text)) { drm.push(name); break; } }
-  }
-  for (const { name, pattern } of AC_KEYWORDS) {
-    if (ac.includes(name)) continue;
-    for (const text of texts) { if (text && pattern.test(text)) { ac.push(name); break; } }
-  }
-  return { drm, ac };
-}
-
-function checkFamilySharing(texts) {
-  for (const text of texts) {
-    if (!text) continue;
-    if (/family.?sharing.*(disabled?|not.?allowed?|not.?supported?)/i.test(text)) return false;
-  }
-  return null;
 }
 
 function escapeHtml(str) {
@@ -144,7 +82,6 @@ async function doSearch(query, resultsDiv) {
 
 // Detail view
 async function showDetail(appId) {
-  if (!dbReady) await loadDatabases();
   navResults.classList.remove('show');
   homeSection.style.display = 'none';
   detailSection.style.display = 'block';
@@ -188,7 +125,6 @@ async function showDetail(appId) {
     const website = app.website || '';
     const support = app.support_info || {};
     const legal = app.legal_notice || '';
-    const detailedDesc = (app.detailed_description || '').replace(/<[^>]*>/g, '');
     if (price) {
       const final = (price.final / 100).toFixed(2);
       const initial = (price.initial / 100).toFixed(2);
@@ -221,24 +157,15 @@ async function showDetail(appId) {
       .slice(0, 10);
 
     const fullDesc = await translateFr((app.about_the_game || app.detailed_description || '').replace(/<[^>]*>/g, '').slice(0, 5000));
-    const searchTexts = [desc, fullDesc || '', legal || ''];
-    const { drm, ac } = detectProtections(searchTexts, appId);
-    // Also check Steam categories for VAC
-    for (const c of categories) {
-      if (/vac|anti.?cheat/i.test(c.description) && !ac.includes('Valve Anti-Cheat')) ac.push('Valve Anti-Cheat');
-    }
-    const fsStatus = checkFamilySharing(searchTexts);
+    // Use server-side detected protections
+    const drm = app._drm || [];
+    const ac = app._ac || [];
     const drmHtml = drm.length
       ? drm.map(d => `<span class="tag-drm${d === 'Denuvo' ? ' tag-critical' : ''}">🔒 ${escapeHtml(d)}</span>`).join('')
-      : '<span class="tag-none">Aucun DRM</span>';
+      : null;
     const acHtml = ac.length
       ? ac.map(a => `<span class="tag-ac${a === 'Easy Anti-Cheat' || a === 'Valve Anti-Cheat' ? ' tag-critical' : ''}">🛡️ ${escapeHtml(a)}</span>`).join('')
       : null;
-    const fsHtml = fsStatus === false
-      ? '<span class="tag-fs-disabled">❌ Désactivé</span>'
-      : fsStatus === true
-        ? '<span class="tag-fs-enabled">✅ Activé</span>'
-        : '<span class="tag-none">Inconnu</span>';
 
     detailContent.innerHTML = `
       <div class="detail-header">
@@ -265,18 +192,14 @@ async function showDetail(appId) {
           <div class="dc-value c-players">${playerCount !== null ? playerCount.toLocaleString() : 'N/A'}</div>
           <div class="dc-sub">en ce moment</div>
         </div>
-        <div class="detail-card">
+        ${drmHtml ? `<div class="detail-card">
           <h3>🔒 DRM</h3>
           <div class="dc-tags">${drmHtml}</div>
-        </div>
-        <div class="detail-card">
+        </div>` : ''}
+        ${acHtml ? `<div class="detail-card">
           <h3>🛡️ Anti-Triche</h3>
-          <div class="dc-tags">${acHtml || '<span class="tag-none">Aucun anti-triche</span>'}</div>
-        </div>
-        <div class="detail-card">
-          <h3>👪 Partage familial</h3>
-          <div class="dc-tags">${fsHtml}</div>
-        </div>
+          <div class="dc-tags">${acHtml}</div>
+        </div>` : ''}
         ${metacritic ? `
         <div class="detail-card">
           <h3>🏆 Metacritic</h3>
@@ -410,6 +333,5 @@ async function loadNews(appId) {
   } catch {}
 }
 
-loadDatabases();
 loadFeatured();
 loadCryptoPrices();

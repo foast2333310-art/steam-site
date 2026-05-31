@@ -86,24 +86,6 @@ app.get('/api/translate', async (req, res) => {
   }
 });
 
-app.get('/api/denuvo', (req, res) => {
-  try {
-    const data = require('./data/denuvo.json');
-    res.json(data.games);
-  } catch (err) {
-    res.json([]);
-  }
-});
-
-app.get('/api/anticheat', (req, res) => {
-  try {
-    const data = require('./data/anticheat.json');
-    res.json(data.games);
-  } catch (err) {
-    res.json({});
-  }
-});
-
 app.get('/api/app/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -112,8 +94,67 @@ app.get('/api/app/:id', async (req, res) => {
     const data = await fetchJson(`${STEAM_STORE_API}/appdetails?appids=${id}&cc=fr&l=fr`);
     const app = data[id];
     if (!app || !app.success) return res.status(404).json({ error: 'App not found' });
-    setCache(`app_${id}`, app.data);
-    res.json(app.data);
+    // Detect DRM/AC from raw data
+    const d = app.data;
+    const texts = [
+      d.legal_notice || '', d.about_the_game || '', d.detailed_description || '',
+      d.short_description || '', d.supported_languages || '', d.pc_requirements?.minimum || ''
+    ];
+    const drmList = [];
+    const acList = [];
+    const numId = Number(id);
+    // Database checks
+    try {
+      const dd = require('./data/denuvo.json');
+      if (dd.games?.includes(numId)) drmList.push('Denuvo');
+      const aa = require('./data/anticheat.json');
+      if (aa.games?.easy_anti_cheat?.includes(numId) && !acList.includes('Easy Anti-Cheat')) acList.push('Easy Anti-Cheat');
+    } catch {}
+    // DRM patterns (broad)
+    const drmPat = [
+      { n: 'Denuvo',       r: /denuvo/i },
+      { n: 'VMProtect',    r: /vmprotect/i },
+      { n: 'NProtect',     r: /nprotect/i },
+      { n: 'GameGuard',    r: /gameguard/i },
+      { n: 'StarForce',    r: /starforce/i },
+      { n: 'SecuROM',      r: /securom/i },
+      { n: 'SafeDisc',     r: /safedisc/i },
+      { n: 'ARXAN',        r: /arxan/i },
+      { n: 'Caphyon',      r: /caphyon/i },
+      { n: 'EasyAntiCheat (EOS SDK)', r: /eos\s*sdk|epic\s*online\s*sdk/i },
+    ];
+    const acPat = [
+      { n: 'Easy Anti-Cheat',  r: /easy\s*[-]?\s*anti\s*[-]?\s*(cheat|triche)|easyanticheat|\beac\b/i },
+      { n: 'BattlEye',         r: /battleye/i },
+      { n: 'Valve Anti-Cheat', r: /valve\s*[-]?\s*anti\s*[-]?\s*(cheat|triche)|\bvac\b/i },
+      { n: 'nProtect GameGuard', r: /nprotect|gameguard/i },
+      { n: 'PunkBuster',       r: /punkbuster/i },
+      { n: 'FaceIt',           r: /faceit/i },
+      { n: 'RICOCHET',         r: /ricochet/i },
+      { n: 'Xbox Live',        r: /xbox\s*live/i },
+      { n: 'PlayStation Network', r: /playstation\s*network|psn/i },
+      { n: 'Epic Online Services', r: /epic\s*online\s*services|epic.*eos\b|eos.*epic/i },
+      { n: 'Nexon Anti-Cheat',  r: /nexon\s*anti.?cheat|blackcipher|be?hod/i },
+      { n: 'AhnLab',           r: /ahnlab|hackshield/i },
+      { n: 'Tencent',          r: /tencent\s*(anti.?cheat|protect)|tenten/i },
+      { n: 'EQU8',             r: /\bequ8\b/i },
+      { n: 'MUnique',          r: /munique/i },
+      { n: 'FPSAC',            r: /fpsac/i },
+      { n: 'Denuvo Anti-Cheat', r: /denuvo\s*anti.?cheat/i },
+    ];
+    for (const t of texts) {
+      for (const p of drmPat) { if (!drmList.includes(p.n) && p.r.test(t)) drmList.push(p.n); }
+      for (const p of acPat) { if (!acList.includes(p.n) && p.r.test(t)) acList.push(p.n); }
+    }
+    // Also check Steam categories
+    for (const c of d.categories || []) {
+      if (/vac|anti.?cheat/i.test(c.description) && !acList.includes('Valve Anti-Cheat')) acList.push('Valve Anti-Cheat');
+      if (/battleye/i.test(c.description) && !acList.includes('BattlEye')) acList.push('BattlEye');
+    }
+    d._drm = drmList;
+    d._ac = acList;
+    setCache(`app_${id}`, d);
+    res.json(d);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
