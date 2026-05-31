@@ -94,23 +94,20 @@ app.get('/api/app/:id', async (req, res) => {
     const data = await fetchJson(`${STEAM_STORE_API}/appdetails?appids=${id}&cc=fr&l=fr`);
     const app = data[id];
     if (!app || !app.success) return res.status(404).json({ error: 'App not found' });
-    // Detect DRM/AC from raw data
+    // Detect DRM/AC — only scan legal_notice (Steam-mandated DRM disclosure) and Steam categories
     const d = app.data;
-    const texts = [
-      d.legal_notice || '', d.about_the_game || '', d.detailed_description || '',
-      d.short_description || '', d.supported_languages || '', d.pc_requirements?.minimum || ''
-    ];
+    const legalText = d.legal_notice || '';
     const drmList = [];
     const acList = [];
     const numId = Number(id);
-    // Database checks
+    // Database checks (most reliable)
     try {
       const dd = require('./data/denuvo.json');
       if (dd.games?.includes(numId)) drmList.push('Denuvo');
       const aa = require('./data/anticheat.json');
       if (aa.games?.easy_anti_cheat?.includes(numId) && !acList.includes('Easy Anti-Cheat')) acList.push('Easy Anti-Cheat');
     } catch {}
-    // DRM patterns (broad)
+    // DRM patterns — legal_notice only
     const drmPat = [
       { n: 'Denuvo',       r: /denuvo/i },
       { n: 'VMProtect',    r: /vmprotect/i },
@@ -120,29 +117,22 @@ app.get('/api/app/:id', async (req, res) => {
       { n: 'ARXAN',        r: /arxan/i },
       { n: 'Caphyon',      r: /caphyon/i },
     ];
+    // AC patterns — legal_notice only
     const acPat = [
-      { n: 'Easy Anti-Cheat',  r: /easy\s*[-]?\s*anti\s*[-]?\s*(cheat|triche)|easyanticheat/i },
+      { n: 'Easy Anti-Cheat',  r: /easy\s*[-]?\s*anti\s*[-]?\s*cheat|easyanticheat/i },
       { n: 'BattlEye',         r: /battleye/i },
-      { n: 'Valve Anti-Cheat', r: /valve\s*[-]?\s*anti\s*[-]?\s*(cheat|triche)/i },
+      { n: 'Valve Anti-Cheat', r: /valve\s*[-]?\s*anti\s*[-]?\s*cheat/i },
       { n: 'nProtect GameGuard', r: /nprotect|gameguard/i },
       { n: 'PunkBuster',       r: /punkbuster/i },
-      { n: 'FaceIt',           r: /faceit\s*[-]?\s*anti.?cheat|faceit\s*ac/i },
-      { n: 'RICOCHET',         r: /ricochet\s*anti.?cheat/i },
-      { n: 'Epic Online Services', r: /epic\s*online\s*services.*anti|eos.*anti.?cheat/i },
-      { n: 'Nexon Anti-Cheat',  r: /nexon\s*anti.?cheat/i },
-      { n: 'AhnLab',           r: /ahnlab|hackshield/i },
-      { n: 'EQU8',             r: /\bequ8\b/i },
-      { n: 'MUnique',          r: /munique/i },
-      { n: 'Denuvo Anti-Cheat', r: /denuvo\s*anti.?cheat/i },
     ];
-    for (const t of texts) {
-      for (const p of drmPat) { if (!drmList.includes(p.n) && p.r.test(t)) drmList.push(p.n); }
-      for (const p of acPat) { if (!acList.includes(p.n) && p.r.test(t)) acList.push(p.n); }
-    }
-    // Also check Steam categories
+    for (const p of drmPat) { if (!drmList.includes(p.n) && p.r.test(legalText)) drmList.push(p.n); }
+    for (const p of acPat) { if (!acList.includes(p.n) && p.r.test(legalText)) acList.push(p.n); }
+    // Steam categories (second source — check all categories)
     for (const c of d.categories || []) {
-      if (/vac|anti.?cheat/i.test(c.description) && !acList.includes('Valve Anti-Cheat')) acList.push('Valve Anti-Cheat');
-      if (/battleye/i.test(c.description) && !acList.includes('BattlEye')) acList.push('BattlEye');
+      if (!acList.includes('Valve Anti-Cheat') && /\bvac\b|valve\s*anti.?cheat/i.test(c.description)) acList.push('Valve Anti-Cheat');
+      if (!acList.includes('BattlEye') && /battleye/i.test(c.description)) acList.push('BattlEye');
+      if (!acList.includes('Easy Anti-Cheat') && /\beac\b|easy\s*anti.?cheat/i.test(c.description)) acList.push('Easy Anti-Cheat');
+      if (!acList.includes('Denuvo') && /denuvo/i.test(c.description)) { if (!drmList.includes('Denuvo')) drmList.push('Denuvo'); }
     }
     d._drm = drmList;
     d._ac = acList;
