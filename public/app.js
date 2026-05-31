@@ -348,10 +348,7 @@ function showProfile() {
     main.innerHTML = `
       <div class="settings-card">
         <h3>🔑 Se connecter</h3>
-        <p class="text-muted" style="font-size:12px">Choisis un profil et entre ton mot de passe :</p>
-        <select id="loginProfileSelect" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
-          ${profiles.length ? profiles.map(p => `<option value="${p.id}">${escapeHtml(p.name)}${p.steamId ? ' 🟢' : ''}</option>`).join('') : '<option value="">Aucun profil</option>'}
-        </select>
+        <input type="text" id="loginName" placeholder="Nom du profil" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
         <input type="password" id="loginPassword" placeholder="Mot de passe" style="width:100%;padding:8px;margin:4px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
         <div id="loginStatus" style="font-size:11px;margin:4px 0"></div>
         <button class="btn" onclick="login()">🔓 Se connecter</button>
@@ -370,16 +367,16 @@ function showProfile() {
 }
 
 function login() {
-  const id = document.getElementById('loginProfileSelect').value;
+  const name = document.getElementById('loginName').value.trim();
   const password = document.getElementById('loginPassword').value;
   const status = document.getElementById('loginStatus');
-  if (!id) { status.textContent = '❌ Sélectionne un profil'; status.style.color = '#ff5555'; return; }
+  if (!name) { status.textContent = '❌ Entre ton nom'; status.style.color = '#ff5555'; return; }
   if (!password) { status.textContent = '❌ Entre ton mot de passe'; status.style.color = '#ff5555'; return; }
   const profiles = getProfiles();
-  const p = profiles.find(pr => pr.id === id);
+  const p = profiles.find(pr => pr.name.toLowerCase() === name.toLowerCase());
   if (!p) { status.textContent = '❌ Profil introuvable'; status.style.color = '#ff5555'; return; }
   if (p.password !== btoa(password)) { status.textContent = '❌ Mot de passe incorrect'; status.style.color = '#ff5555'; return; }
-  setActiveProfile(id);
+  setActiveProfile(p.id);
   localStorage.setItem('slimedeals_logged_in', 'true');
   const profile = getActiveProfile();
   if (profile && profile.steamId) goToLibrary();
