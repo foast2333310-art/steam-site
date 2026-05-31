@@ -353,6 +353,7 @@ function showProfile() {
         </div>
         <div class="profile-card">
           <h3>➕ Nouveau profil</h3>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:10px;line-height:1.5">Crée un profil pour utiliser le site. Le Steam ID et la clé API ne sont <strong>pas obligatoires</strong> — ils ne servent que pour la bibliothèque et le temps de jeu.</p>
           <input class="profile-input" type="text" id="newProfName" placeholder="Nom du profil">
           <input class="profile-input" type="password" id="newProfPassword" placeholder="Mot de passe">
           <input class="profile-input" type="text" id="newProfSteamId" placeholder="Steam ID ou vanity (optionnel)">
