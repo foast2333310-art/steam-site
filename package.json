@@ -1,0 +1,13 @@
+{
+  "name": "steam-site",
+  "version": "1.0.0",
+  "description": "SteamDB-like site using Steam APIs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@vitalets/google-translate-api": "^9.2.1",
+    "express": "^5.2.1"
+  }
+}

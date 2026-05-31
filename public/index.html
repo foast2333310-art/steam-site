@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlimeDeals</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <div class="logo" onclick="goHome()" style="cursor:pointer">SlimeDeals</div>
+      <div class="nav-search">
+        <input type="text" id="navSearch" placeholder="Rechercher un jeu..." autocomplete="off">
+        <div id="navResults" class="search-results"></div>
+      </div>
+      <button class="theme-btn" id="themeBtn" title="Mode nuit/jour">🌙</button>
+    </div>
+  </nav>
+
+  <main>
+    <section id="home">
+      <div class="hero">
+        <h1>Slime<span>Deals</span></h1>
+        <p>Recherchez des jeux, consultez les prix, le nombre de joueurs et les actualités</p>
+      </div>
+      <div class="featured">
+        <h2>Jeux populaires</h2>
+        <div class="featured-grid" id="featuredGrid"></div>
+      </div>
+    </section>
+
+    <section id="detail" style="display:none">
+      <button class="back-btn" onclick="goHome()">← Retour</button>
+      <div id="detailContent"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p><a href="https://store.steampowered.com" target="_blank">Steam</a> • <a href="https://discord.gg/Ub5akZJW9u" target="_blank">Discord</a> • <a href="https://slimedeals.fr/" target="_blank">slimedeals.fr</a> • SlimeDeals</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
