@@ -384,6 +384,35 @@ footer {
 .loading { text-align: center; padding: 36px; color: var(--text-muted); }
 .text-muted { color: var(--text-muted); }
 
+/* Preview section */
+.preview-section { margin-top: 36px; padding: 0 16px; }
+.preview-section h2 { font-size: 15px; margin-bottom: 16px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.preview-card {
+  background: var(--bg-alt); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 14px; cursor: pointer;
+  transition: border-color .2s, transform .2s;
+}
+.preview-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.pc-icon { font-size: 24px; margin-bottom: 6px; }
+.pc-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.pc-desc { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+.pc-mock {
+  background: var(--bg); border-radius: var(--radius); padding: 8px;
+  font-size: 10px; color: var(--text-dim); line-height: 1.6;
+}
+.mock-game { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid var(--border); }
+.mock-game:last-child { border-bottom: none; }
+.mock-hours { color: var(--accent); }
+.mock-date { color: var(--accent); font-weight: 600; }
+.mock-news { padding: 3px 0; border-bottom: 1px solid var(--border); }
+.mock-news:last-child { border-bottom: none; }
+.mock-tl { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+.tl-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.mock-bar { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+.mock-bar span { width: 40px; flex-shrink: 0; }
+.bar-fill { background: #7a0000; color: #ff4444; padding: 1px 6px; border-radius: 2px; font-weight: 600; white-space: nowrap; }
+
 @media (max-width: 768px) {
   .hero h1 { font-size: 24px; }
   .detail-header img { height: 180px; }

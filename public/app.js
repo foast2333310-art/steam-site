@@ -290,6 +290,16 @@ function goHome() {
   detailContent.innerHTML = '';
 }
 
+function showPreview(name) {
+  const labels = {
+    library: '📚 Bibliothèque Steam — Importe ta bibliothèque via clé API Steam. Affiche tes jeux, heures de jeu, évaluations.',
+    patchnotes: '📝 Patch Notes — Fil des mises à jour d\'un jeu traduites en français. Alimenté par l\'API Steam News.',
+    timeline: '⏳ Timeline — Chronologie des mises à jour majeures. Version simplifiée des patch notes avec les dates clés.',
+    playtime: '⏱️ Temps de jeu — Graphique de tes heures par jeu. Nécessite une clé API Steam. Moyenne hebdo/mensuelle.'
+  };
+  alert('🔬 ' + (labels[name] || 'Fonctionnalité à venir'));
+}
+
 async function loadFeatured() {
   featuredGrid.innerHTML = '<div class="loading" style="grid-column:1/-1">Chargement des jeux populaires...</div>';
   try {
