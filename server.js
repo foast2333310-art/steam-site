@@ -29,7 +29,7 @@ const PORT = process.env.PORT || 4000;
 
 const STEAM_STORE_API = 'https://store.steampowered.com/api';
 const STEAM_API = 'https://api.steampowered.com';
-const CACHE_DURATION = 5 * 60 * 1000;
+const CACHE_DURATION = 60 * 60 * 1000;
 const cache = {};
 
 function getCached(key) {
@@ -44,11 +44,18 @@ function setCache(key, data) {
 app.use(express.static(path.join(__dirname, 'public')));
 
 async function fetchJson(url) {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10000);
+  try {
+    const res = await fetch(url, {
+      signal: ctrl.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 app.get('/api/search', async (req, res) => {

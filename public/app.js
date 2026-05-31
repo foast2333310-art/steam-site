@@ -148,14 +148,15 @@ async function showDetail(appId) {
   window.scrollTo({ top: 0 });
 
   try {
-    const [app, players, achievements, news] = await Promise.all([
+    const [app, players, achievements] = await Promise.all([
       fetchJson(`/api/app/${appId}`),
       fetchJson(`/api/players/${appId}`),
-      fetchJson(`/api/achievements/${appId}`),
-      fetchJson(`/api/news/${appId}`)
+      fetchJson(`/api/achievements/${appId}`)
     ]);
 
     if (!app) throw new Error('Jeu introuvable');
+
+    loadNews(appId);
 
     const name = escapeHtml(app.name);
     const header = app.header_image || '';
@@ -171,43 +172,6 @@ async function showDetail(appId) {
     const categories = app.categories || [];
     const playerCount = players?.response?.player_count ?? null;
     const achData = achievements?.achievementpercentages?.achievements || [];
-    const newsItems = (news?.appnews?.newsitems || []).slice(0, 5);
-    const translatedNews = await Promise.all(newsItems.map(async n => ({
-      title: await translateFr(n.title),
-      contents: await translateFr((n.contents || '').replace(/<[^>]*>/g, '').slice(0, 300)),
-      date: n.date
-    })));
-    const metacritic = app.metacritic || null;
-    const legal = app.legal_notice || '';
-    const fullDesc = await translateFr(
-      (app.about_the_game || app.detailed_description || '').replace(/<[^>]*>/g, '').slice(0, 5000)
-    );
-    const detailedDesc = (app.detailed_description || '').replace(/<[^>]*>/g, '');
-    const platforms = app.platforms || {};
-    const support = app.support_info || {};
-    const website = app.website || '';
-    const screenshots = app.screenshots || [];
-    const dlc = app.dlc || [];
-    const reqs = app.pc_requirements || {};
-
-    const searchTexts = [desc, legal, fullDesc, detailedDesc];
-    const { drm, ac } = detectProtections(searchTexts, appId);
-    const fsStatus = checkFamilySharing(searchTexts);
-
-    const drmHtml = drm.length
-      ? drm.map(d => `<span class="tag-drm${d === 'Denuvo' ? ' tag-critical' : ''}">🔒 ${escapeHtml(d)}</span>`).join('')
-      : '<span class="tag-none">Aucun DRM</span>';
-
-    const acHtml = ac.length
-      ? ac.map(a => `<span class="tag-ac${a === 'Easy Anti-Cheat' || a === 'Valve Anti-Cheat' ? ' tag-critical' : ''}">🛡️ ${escapeHtml(a)}</span>`).join('')
-      : null;
-
-    const fsHtml = fsStatus === false
-      ? '<span class="tag-fs-disabled">❌ Désactivé</span>'
-      : fsStatus === true
-        ? '<span class="tag-fs-enabled">✅ Activé</span>'
-        : '<span class="tag-none">Inconnu</span>';
-
     // Price
     let priceHtml = '<span class="text-muted">Gratuit</span>';
     let promoHtml = '';
@@ -351,19 +315,10 @@ async function showDetail(appId) {
         </div>
       </div>` : ''}
 
-      ${translatedNews.length ? `
-      <div class="detail-section">
+      <div class="detail-section" id="newsSection">
         <h3>📰 Actualités</h3>
-        <div class="news-list">
-          ${translatedNews.map(n => `
-            <div class="news-item">
-              <div class="ni-title">${escapeHtml(n.title)}</div>
-              <div class="ni-desc">${escapeHtml(n.contents || '')}</div>
-              <div class="ni-date">${new Date(n.date * 1000).toLocaleDateString('fr-FR')}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>` : ''}
+        <div class="loading" style="padding:12px 0">Chargement des actualités...</div>
+      </div>
     `;
   } catch (err) {
     detailContent.innerHTML = `<div style="text-align:center;padding:40px;color:#ff5555">❌ Erreur: ${err.message}</div>`;
@@ -393,6 +348,33 @@ async function loadFeatured() {
   } catch (err) {
     featuredGrid.innerHTML = '<div style="grid-column:1/-1;color:#ff5555">Erreur de chargement</div>';
   }
+}
+
+async function loadNews(appId) {
+  try {
+    let news = await fetchJson(`/api/news/${appId}`);
+    const items = (news?.appnews?.newsitems || []).slice(0, 5);
+    const translated = await Promise.all(items.map(async n => ({
+      title: await translateFr(n.title),
+      contents: await translateFr((n.contents || '').replace(/<[^>]*>/g, '').slice(0, 300)),
+      date: n.date
+    })));
+    const section = document.getElementById('newsSection');
+    if (!section) return;
+    if (!translated.length) {
+      section.innerHTML = '<h3>📰 Actualités</h3><div class="text-muted" style="padding:12px 0">Aucune actualité récente</div>';
+      return;
+    }
+    section.innerHTML = '<h3>📰 Actualités</h3><div class="news-list">' +
+      translated.map(n => `
+        <div class="news-item">
+          <div class="ni-title">${escapeHtml(n.title)}</div>
+          <div class="ni-desc">${escapeHtml(n.contents || '')}</div>
+          <div class="ni-date">${new Date(n.date * 1000).toLocaleDateString('fr-FR')}</div>
+        </div>
+      `).join('') +
+    '</div>';
+  } catch {}
 }
 
 loadDatabases();
