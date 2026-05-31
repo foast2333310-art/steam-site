@@ -20,6 +20,8 @@ themeBtn.addEventListener('click', () => {
   themeBtn.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
 });
 
+let dbReady = false;
+
 async function loadDatabases() {
   try {
     [denuvoList, anticheatDb] = await Promise.all([
@@ -27,6 +29,7 @@ async function loadDatabases() {
       fetchJson('/api/anticheat')
     ]);
   } catch (e) { denuvoList = []; anticheatDb = {}; }
+  dbReady = true;
 }
 
 async function loadCryptoPrices() {
@@ -141,6 +144,7 @@ async function doSearch(query, resultsDiv) {
 
 // Detail view
 async function showDetail(appId) {
+  if (!dbReady) await loadDatabases();
   navResults.classList.remove('show');
   homeSection.style.display = 'none';
   detailSection.style.display = 'block';
@@ -219,6 +223,10 @@ async function showDetail(appId) {
     const fullDesc = await translateFr((app.about_the_game || app.detailed_description || '').replace(/<[^>]*>/g, '').slice(0, 5000));
     const searchTexts = [desc, fullDesc || '', legal || ''];
     const { drm, ac } = detectProtections(searchTexts, appId);
+    // Also check Steam categories for VAC
+    for (const c of categories) {
+      if (/vac|anti.?cheat/i.test(c.description) && !ac.includes('Valve Anti-Cheat')) ac.push('Valve Anti-Cheat');
+    }
     const fsStatus = checkFamilySharing(searchTexts);
     const drmHtml = drm.length
       ? drm.map(d => `<span class="tag-drm${d === 'Denuvo' ? ' tag-critical' : ''}">🔒 ${escapeHtml(d)}</span>`).join('')
