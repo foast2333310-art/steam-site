@@ -292,6 +292,10 @@ nav {
   background: #0a1a2a; padding: 2px 7px; border-radius: 3px;
   font-size: 10px; color: var(--accent); font-weight: 600;
 }
+.tag-critical {
+  background: #7a0000 !important; color: #ff4444 !important;
+  font-weight: 700 !important; font-size: 11px !important;
+}
 
 .plat-icon { font-size: 14px; cursor: help; }
 
