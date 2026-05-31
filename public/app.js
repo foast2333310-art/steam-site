@@ -100,6 +100,10 @@ async function showDetail(appId) {
 
     const name = escapeHtml(app.name);
     const header = app.header_image || '';
+    if (header) {
+      document.body.style.setProperty('--game-bg', `url(${header})`);
+      document.body.classList.add('has-game-bg');
+    }
 
     const rawDesc = (app.short_description || app.about_the_game || '').replace(/<[^>]*>/g, '');
     const desc = await translateFr(rawDesc) || 'Aucune description';
@@ -295,6 +299,8 @@ function goHome() {
   hideAllSections();
   homeSection.style.display = 'block';
   detailContent.innerHTML = '';
+  document.body.classList.remove('has-game-bg');
+  document.body.style.removeProperty('--game-bg');
 }
 
 // Profile system (localStorage)
@@ -311,6 +317,41 @@ function getActiveProfile() {
 }
 function setActiveProfile(id) { localStorage.setItem('slimedeals_active_profile', id); }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+async function loadProfileBadges() {
+  const c = document.getElementById('badgeContent');
+  if (!c) return;
+  const profile = getActiveProfile();
+  if (!profile) { c.innerHTML = 'Connecte-toi'; return; }
+  // Try to fetch library stats
+  let games = [], totalMin = 0;
+  if (profile.steamId && profile.apiKey) {
+    try {
+      const data = await fetchJson(`/api/library/${profile.steamId}?key=${profile.apiKey || ''}`);
+      if (data.games) { games = data.games; totalMin = games.reduce((s, g) => s + (g.playtime_forever || 0), 0); }
+    } catch {}
+  }
+  const count = games.length || '—';
+  const hours = totalMin ? (totalMin / 60).toFixed(0) : '—';
+  const level = totalMin ? Math.floor(Math.sqrt(totalMin / 600)) + 1 : 1;
+  const badges = [];
+  badges.push({ icon: '🎖️', label: 'Niveau ' + level, desc: level > 10 ? 'Vétéran' : level > 5 ? 'Habitué' : 'Débutant' });
+  if (count !== '—') {
+    badges.push({ icon: '📦', label: count + ' jeux', desc: count > 50 ? 'Collectionneur' : count > 10 ? 'Passionné' : 'Explorateur' });
+    badges.push({ icon: '⏱️', label: hours + 'h', desc: hours > 1000 ? 'Hardcore' : hours > 100 ? 'Assidu' : 'Occasionnel' });
+  }
+  if (profile.steamId) badges.push({ icon: '🔗', label: 'Steam lié', desc: 'Profil connecté' });
+  if (profile.apiKey) badges.push({ icon: '🔑', label: 'Clé API', desc: 'Développeur' });
+  c.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+    ${badges.map(b => `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:90px;transition:border-color .2s" onmouseenter="this.style.borderColor='var(--accent)'" onmouseleave="this.style.borderColor=''">
+        <span style="font-size:22px">${b.icon}</span>
+        <span style="font-size:12px;font-weight:600">${b.label}</span>
+        <span style="font-size:9px;color:var(--text-dim)">${b.desc}</span>
+      </div>
+    `).join('')}
+  </div>`;
+}
 
 function showProfile() {
   hideAllSections();
@@ -333,6 +374,10 @@ function showProfile() {
             <button class="btn" style="background:#7a0000" onclick="logout()">🚪 Déconnexion</button>
           </div>
         </div>
+        <div class="profile-card" id="badgeCard">
+          <h3>🏆 Badges</h3>
+          <div id="badgeContent" style="text-align:center;padding:8px;color:var(--text-dim);font-size:12px">Chargement...</div>
+        </div>
         <div class="profile-card">
           <h3>🔗 Liens utiles</h3>
           <div class="profile-links">
@@ -341,6 +386,7 @@ function showProfile() {
           </div>
         </div>
       </div>`;
+    loadProfileBadges();
   } else {
     main.innerHTML = `
       <div class="profile-grid">
