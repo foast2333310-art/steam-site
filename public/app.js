@@ -166,12 +166,15 @@ async function showDetail(appId) {
     const acHtml = ac.length
       ? ac.map(a => `<span class="tag-critical">🛡️ ${escapeHtml(a)}</span>`).join('')
       : null;
+    const protectedBadge = (drm.length || ac.length)
+      ? '<span class="tag-protected">🛡️ Protégé</span>'
+      : '';
 
     detailContent.innerHTML = `
       <div class="detail-header">
         <img src="${header}" alt="${name}" onerror="this.style.display='none'">
         <div class="dh-overlay">
-          <h1>${name} <span class="app-id">#${appId}</span></h1>
+          <h1>${name} <span class="app-id">#${appId}</span> ${protectedBadge}</h1>
           <div class="dh-meta">
             <span>📅 ${release}</span>
             ${devs.length ? `<span>👨‍💻 ${escapeHtml(devs.join(', '))}</span>` : ''}
