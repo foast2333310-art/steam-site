@@ -209,6 +209,21 @@ async function showDetail(appId) {
       .sort((a, b) => Number(b.percent) - Number(a.percent))
       .slice(0, 10);
 
+    const searchTexts = [desc, fullDesc || ''];
+    const { drm, ac } = detectProtections(searchTexts, appId);
+    const fsStatus = checkFamilySharing(searchTexts);
+    const drmHtml = drm.length
+      ? drm.map(d => `<span class="tag-drm${d === 'Denuvo' ? ' tag-critical' : ''}">🔒 ${escapeHtml(d)}</span>`).join('')
+      : '<span class="tag-none">Aucun DRM</span>';
+    const acHtml = ac.length
+      ? ac.map(a => `<span class="tag-ac${a === 'Easy Anti-Cheat' || a === 'Valve Anti-Cheat' ? ' tag-critical' : ''}">🛡️ ${escapeHtml(a)}</span>`).join('')
+      : null;
+    const fsHtml = fsStatus === false
+      ? '<span class="tag-fs-disabled">❌ Désactivé</span>'
+      : fsStatus === true
+        ? '<span class="tag-fs-enabled">✅ Activé</span>'
+        : '<span class="tag-none">Inconnu</span>';
+
     detailContent.innerHTML = `
       <div class="detail-header">
         <img src="${header}" alt="${name}" onerror="this.style.display='none'">
