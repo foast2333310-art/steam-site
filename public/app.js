@@ -164,9 +164,7 @@ async function showDetail(appId) {
       ? drm.map(d => `<span class="tag-drm${d === 'Denuvo' ? ' tag-critical' : ''}">🔒 ${escapeHtml(d)}</span>`).join('')
       : null;
     const acHtml = ac.length
-      ? ac.map(a => a === 'Valve Anti-Cheat'
-        ? '<span class="tag-vac">💧 Valve Anti-Cheat (VAC)</span>'
-        : `<span class="tag-ac${a === 'Easy Anti-Cheat' ? ' tag-critical' : ''}">🛡️ ${escapeHtml(a)}</span>`
+      ? ac.map(a => `<span class="tag-ac${a === 'Easy Anti-Cheat' || a === 'Valve Anti-Cheat' ? ' tag-critical' : ''}">🛡️ ${escapeHtml(a)}</span>`)
       ).join('')
       : null;
 
