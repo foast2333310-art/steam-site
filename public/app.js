@@ -82,8 +82,7 @@ async function doSearch(query, resultsDiv) {
 
 // Detail view
 async function showDetail(appId) {
-  navResults.classList.remove('show');
-  homeSection.style.display = 'none';
+  hideAllSections();
   detailSection.style.display = 'block';
   detailContent.innerHTML = '<div class="loading">Chargement...</div>';
   window.scrollTo({ top: 0 });
@@ -284,10 +283,181 @@ async function showDetail(appId) {
   }
 }
 
-function goHome() {
-  homeSection.style.display = 'block';
+function hideAllSections() {
+  navResults.classList.remove('show');
+  homeSection.style.display = 'none';
   detailSection.style.display = 'none';
+  const lib = document.getElementById('library'); if (lib) lib.style.display = 'none';
+  const set = document.getElementById('settings'); if (set) set.style.display = 'none';
+}
+
+function goHome() {
+  hideAllSections();
+  homeSection.style.display = 'block';
   detailContent.innerHTML = '';
+}
+
+// Settings
+function showSettings() {
+  hideAllSections();
+  const s = document.getElementById('settings');
+  if (s) {
+    s.style.display = 'block';
+    document.getElementById('apiKeyInput').value = localStorage.getItem('steam_api_key') || '';
+    document.getElementById('steamIdInput').value = localStorage.getItem('steam_id') || '';
+  }
+}
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (key) localStorage.setItem('steam_api_key', key);
+  else localStorage.removeItem('steam_api_key');
+  alert('💾 Clé API enregistrée');
+}
+async function saveSteamId() {
+  const val = document.getElementById('steamIdInput').value.trim();
+  const status = document.getElementById('steamIdStatus');
+  if (!val) { status.textContent = ''; localStorage.removeItem('steam_id'); return; }
+  let steamId = val;
+  if (!/^\d{17}$/.test(val)) {
+    status.textContent = '🔍 Résolution du vanity URL...';
+    status.style.color = 'var(--text-muted)';
+    try {
+      const data = await fetchJson(`/api/resolve?vanity=${encodeURIComponent(val)}`);
+      if (data.steamid) { steamId = data.steamid; status.textContent = `✅ Résolu: ${steamId}`; status.style.color = 'var(--accent)'; }
+      else if (data.error) { status.textContent = '❌ ' + data.error; status.style.color = '#ff5555'; return; }
+      else { status.textContent = '❌ Impossible de résoudre ce nom'; status.style.color = '#ff5555'; return; }
+    } catch { status.textContent = '❌ Erreur de résolution'; status.style.color = '#ff5555'; return; }
+  } else { status.textContent = '✅ Steam ID valide'; status.style.color = 'var(--accent)'; }
+  localStorage.setItem('steam_id', steamId);
+}
+
+// Library
+async function showLibrary() {
+  hideAllSections();
+  const lib = document.getElementById('library');
+  if (!lib) return;
+  lib.style.display = 'block';
+  const c = document.getElementById('libraryContent');
+  const steamId = localStorage.getItem('steam_id');
+  const apiKey = localStorage.getItem('steam_api_key');
+  if (!steamId) {
+    c.innerHTML = '<div class="settings-card"><h3>🔗 Configuration requise</h3><p class="text-muted" style="font-size:12px">Définis ton Steam ID dans les ⚙️ Paramètres pour voir ta bibliothèque.</p></div>';
+    return;
+  }
+  c.innerHTML = '<div class="loading">Chargement de la bibliothèque...</div>';
+  try {
+    const data = await fetchJson(`/api/library/${steamId}?key=${apiKey || ''}`);
+    if (data.demo) {
+      c.innerHTML = demoLibrary();
+      return;
+    }
+    if (data.error) { c.innerHTML = `<div class="settings-card"><h3>❌ Erreur</h3><p class="text-muted" style="font-size:12px">${escapeHtml(data.error)}</p></div>`; return; }
+    const games = data.games || [];
+    if (!games.length) { c.innerHTML = '<div class="settings-card"><p class="text-muted">Aucun jeu trouvé</p></div>'; return; }
+    c.innerHTML = renderLibrary(games);
+  } catch (err) {
+    c.innerHTML = `<div class="settings-card"><h3>❌ Erreur</h3><p class="text-muted">${escapeHtml(err.message)}</p></div>`;
+  }
+}
+
+function demoLibrary() {
+  const demo = [
+    { name: 'Counter-Strike 2', appid: 730, playtime_forever: 1234, playtime_2weeks: 12, img: 'https://steamcdn-a.akamaihd.net/steam/apps/730/header.jpg' },
+    { name: 'Dota 2', appid: 570, playtime_forever: 892, playtime_2weeks: 0, img: 'https://steamcdn-a.akamaihd.net/steam/apps/570/header.jpg' },
+    { name: 'Hogwarts Legacy', appid: 990080, playtime_forever: 67, playtime_2weeks: 8, img: 'https://steamcdn-a.akamaihd.net/steam/apps/990080/header.jpg' },
+    { name: 'Team Fortress 2', appid: 440, playtime_forever: 456, playtime_2weeks: 3, img: 'https://steamcdn-a.akamaihd.net/steam/apps/440/header.jpg' },
+  ];
+  return `<div class="settings-card"><h3>🎮 Bibliothèque (démo)</h3><p class="text-muted" style="font-size:12px">Ajoute ta clé API Steam dans ⚙️ Paramètres pour voir ta vraie bibliothèque.</p></div><div class="library-header"><h2>Mes jeux</h2><span class="library-stats">${demo.length} jeux — ${demo.reduce((s,g) => s + g.playtime_forever, 0)}h total</span></div><input class="lib-search" type="text" id="libSearch" placeholder="Filtrer..." oninput="filterLibrary()">${demo.map(g => renderLibGame(g)).join('')}`;
+}
+
+function renderLibrary(games) {
+  const total = games.length;
+  const totalHours = games.reduce((s, g) => s + (g.playtime_forever || 0), 0);
+  const sort = (games, key) => games.sort((a, b) => (b[key] || 0) - (a[key] || 0));
+  const sorted = sort([...games], 'playtime_forever');
+  return `<div class="library-header"><h2>📚 Ma Bibliothèque</h2><span class="library-stats">${total} jeux — ${(totalHours/60).toFixed(0)}h total</span></div>
+    <input class="lib-search" type="text" id="libSearch" placeholder="Filtrer..." oninput="filterLibrary()">
+    <div class="lib-sort" style="font-size:11px;color:var(--text-dim);margin-bottom:8px">Trier: <span class="nav-link" onclick="sortLibrary('playtime')" style="font-size:11px">⏱️ Temps</span> • <span class="nav-link" onclick="sortLibrary('name')" style="font-size:11px">🔤 Nom</span></div>
+    <div id="libList">${sorted.map(g => renderLibGame(g)).join('')}</div>`;
+}
+
+function renderLibGame(g) {
+  const h = (g.playtime_forever || 0) / 60;
+  const maxH = 500;
+  const pct = Math.min((h / maxH) * 100, 100);
+  const img = g.img || `https://steamcdn-a.akamaihd.net/steam/apps/${g.appid}/header.jpg`;
+  return `<div class="lib-game" onclick="showDetail(${g.appid})">
+    <img src="${img}" alt="" loading="lazy" onerror="this.style.display='none'">
+    <div class="lib-info">
+      <div class="lib-name">${escapeHtml(g.name)}</div>
+      <div class="lib-bar"><div class="lib-bar-fill" style="width:${pct}%"></div></div>
+    </div>
+    <span class="lib-hours">${h.toFixed(0)}h</span>
+  </div>`;
+}
+
+let libraryData = [];
+async function sortLibrary(by) {
+  const c = document.getElementById('libraryContent');
+  if (!libraryData.length) return;
+  let sorted;
+  if (by === 'name') sorted = [...libraryData].sort((a, b) => a.name.localeCompare(b.name));
+  else sorted = [...libraryData].sort((a, b) => (b.playtime_forever || 0) - (a.playtime_forever || 0));
+  const list = document.getElementById('libList');
+  if (list) list.innerHTML = sorted.map(g => renderLibGame(g)).join('');
+}
+function filterLibrary() {
+  const q = (document.getElementById('libSearch')?.value || '').toLowerCase();
+  const games = document.querySelectorAll('.lib-game');
+  games.forEach(g => { g.style.display = g.querySelector('.lib-name')?.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+}
+
+// Enhanced loadNews with timeline tab
+async function loadNews(appId) {
+  try {
+    const news = await fetchJson(`/api/news/${appId}`);
+    const items = (news?.appnews?.newsitems || []).slice(0, 15);
+    const translated = await Promise.all(items.map(async n => ({
+      title: await translateFr(n.title),
+      contents: await translateFr((n.contents || '').replace(/<[^>]*>/g, '').slice(0, 400)),
+      date: n.date,
+      dateStr: new Date(n.date * 1000).toLocaleDateString('fr-FR'),
+      year: new Date(n.date * 1000).getFullYear()
+    })));
+    const section = document.getElementById('newsSection');
+    if (!section) return;
+    if (!translated.length) {
+      section.innerHTML = '<h3>📰 Actualités</h3><div class="text-muted" style="padding:12px 0">Aucune actualité récente</div>';
+      return;
+    }
+    // Build timeline from the same data
+    const byYear = {};
+    translated.forEach(n => { if (!byYear[n.year]) byYear[n.year] = []; byYear[n.year].push(n); });
+    const timelineHtml = Object.keys(byYear).sort((a,b) => b - a).map(year => `
+      <div class="tl-item">
+        <div class="tl-year">${year}</div>
+        ${byYear[year].map(n => `<div class="tl-title">${escapeHtml(n.title)}</div><div class="tl-desc">${escapeHtml(n.contents.slice(0, 200))}</div><div class="tl-tags"><span class="tl-tag">${n.dateStr}</span></div>`).join('')}
+      </div>
+    `).join('');
+    const tabs = `
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <span class="nav-link" onclick="document.querySelectorAll('.tab-content').forEach(e=>e.style.display='none');document.getElementById('tabNews').style.display='block'" style="font-size:12px;font-weight:600">📰 Actualités</span>
+        <span class="nav-link" onclick="document.querySelectorAll('.tab-content').forEach(e=>e.style.display='none');document.getElementById('tabTimeline').style.display='block'" style="font-size:12px;font-weight:600">⏳ Timeline</span>
+      </div>`;
+    section.innerHTML = `<h3>📰 Actualités</h3>${tabs}
+      <div id="tabNews" class="tab-content">
+        <div class="news-list">${translated.slice(0, 10).map(n => `
+          <div class="news-item">
+            <div class="ni-title">${escapeHtml(n.title)}</div>
+            <div class="ni-desc">${escapeHtml(n.contents || '')}</div>
+            <div class="ni-date">${n.dateStr}</div>
+          </div>
+        `).join('')}</div>
+      </div>
+      <div id="tabTimeline" class="tab-content" style="display:none">
+        <div class="timeline">${timelineHtml}</div>
+      </div>`;
+  } catch {}
 }
 
 function showPreview(name) {

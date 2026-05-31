@@ -10,6 +10,10 @@
   <nav>
     <div class="nav-inner">
       <div class="logo" onclick="goHome()" style="cursor:pointer">SlimeDeals</div>
+      <div class="nav-links">
+        <span class="nav-link" onclick="showLibrary()">📚 Bibliothèque</span>
+        <span class="nav-link" onclick="showSettings()">⚙️</span>
+      </div>
       <div class="nav-search">
         <input type="text" id="navSearch" placeholder="Rechercher un jeu..." autocomplete="off">
         <div id="navResults" class="search-results"></div>
@@ -71,6 +75,33 @@
               <div class="mock-bar"><span>TF2</span><div class="bar-fill" style="width:32%">456h</div></div>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="library" style="display:none">
+      <button class="back-btn" onclick="goHome()">← Retour</button>
+      <div id="libraryContent"></div>
+    </section>
+
+    <section id="settings" style="display:none">
+      <button class="back-btn" onclick="goHome()">← Retour</button>
+      <div id="settingsContent">
+        <div class="settings-card">
+          <h3>🔑 Clé API Steam</h3>
+          <p class="text-muted" style="font-size:12px">Optionnelle — nécessaire pour la bibliothèque et le temps de jeu.</p>
+          <input type="text" id="apiKeyInput" placeholder="Entrez votre clé API Steam" style="width:100%;padding:8px;margin:6px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
+          <button class="btn" onclick="saveApiKey()">💾 Enregistrer</button>
+          <div style="margin-top:10px;font-size:11px;color:var(--text-muted)">
+            <a href="https://steamcommunity.com/dev/apikey" target="_blank">Créer une clé API Steam →</a>
+          </div>
+        </div>
+        <div class="settings-card">
+          <h3>👤 Steam ID</h3>
+          <p class="text-muted" style="font-size:12px">Votre ID Steam (ou custom URL). Ex: <code>76561197960287930</code> ou <code>foast</code></p>
+          <input type="text" id="steamIdInput" placeholder="Steam ID ou vanity URL" style="width:100%;padding:8px;margin:6px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
+          <button class="btn" onclick="saveSteamId()">💾 Enregistrer</button>
+          <div id="steamIdStatus" style="margin-top:6px;font-size:11px"></div>
         </div>
       </div>
     </section>

@@ -188,11 +188,58 @@ app.get('/api/news/:id', async (req, res) => {
   try {
     const cached = getCached(`news_${req.params.id}`);
     if (cached) return res.json(cached);
-    const data = await fetchJson(`${STEAM_API}/ISteamNews/GetNewsForApp/v2/?appid=${req.params.id}&count=5&maxlength=500`);
+    const data = await fetchJson(`${STEAM_API}/ISteamNews/GetNewsForApp/v2/?appid=${req.params.id}&count=20&maxlength=1000`);
     setCache(`news_${req.params.id}`, data);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Resolve Steam vanity URL to Steam ID
+app.get('/api/resolve', async (req, res) => {
+  try {
+    const { vanity } = req.query;
+    if (!vanity) return res.json({ error: 'Missing vanity' });
+    const apiKey = process.env.STEAM_API_KEY || '';
+    if (!apiKey) return res.json({ error: 'STEAM_API_KEY manquante' });
+    const data = await fetchJson(`${STEAM_API}/ISteamUser/ResolveVanityURL/v0001/?vanityurl=${encodeURIComponent(vanity)}&key=${apiKey}`);
+    res.json(data.response);
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
+// Get owned games (requires API key)
+app.get('/api/library/:steamId', async (req, res) => {
+  try {
+    const { steamId } = req.params;
+    const apiKey = req.query.key || process.env.STEAM_API_KEY || '';
+    if (!apiKey) return res.json({ error: 'STEAM_API_KEY manquante', demo: true });
+    const cached = getCached(`library_${steamId}`);
+    if (cached) return res.json(cached);
+    const data = await fetchJson(`${STEAM_API}/IPlayerService/GetOwnedGames/v1/?steamid=${steamId}&include_appinfo=true&include_played_free_games=true&key=${apiKey}`);
+    if (data.response) {
+      setCache(`library_${steamId}`, data.response);
+      res.json(data.response);
+    } else {
+      res.json({ error: 'Erreur API Steam' });
+    }
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
+// Get recent playtime (2 weeks)
+app.get('/api/recent/:steamId', async (req, res) => {
+  try {
+    const { steamId } = req.params;
+    const apiKey = req.query.key || process.env.STEAM_API_KEY || '';
+    if (!apiKey) return res.json({ error: 'STEAM_API_KEY manquante' });
+    const data = await fetchJson(`${STEAM_API}/IPlayerService/GetRecentlyPlayedGames/v1/?steamid=${steamId}&count=10&key=${apiKey}`);
+    res.json(data.response || { error: 'Erreur' });
+  } catch (err) {
+    res.json({ error: err.message });
   }
 });
 
