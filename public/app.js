@@ -178,6 +178,13 @@ async function showDetail(appId) {
     let cryptoHtml = '';
     const platforms = app.platforms || {};
     const reqs = app.pc_requirements || {};
+    const metacritic = app.metacritic || null;
+    const dlc = app.dlc || [];
+    const screenshots = app.screenshots || [];
+    const website = app.website || '';
+    const support = app.support_info || {};
+    const legal = app.legal_notice || '';
+    const detailedDesc = (app.detailed_description || '').replace(/<[^>]*>/g, '');
     if (price) {
       const final = (price.final / 100).toFixed(2);
       const initial = (price.initial / 100).toFixed(2);
