@@ -292,6 +292,11 @@ nav {
   background: #0a1a2a; padding: 2px 7px; border-radius: 3px;
   font-size: 10px; color: var(--accent); font-weight: 600;
 }
+.tag-vac {
+  background: #1b2838; padding: 2px 8px; border-radius: 3px;
+  font-size: 10px; color: #66c0f4; font-weight: 600;
+  border: 1px solid #417a9b;
+}
 .tag-fs-disabled {
   background: #2a0a0a; padding: 2px 7px; border-radius: 3px;
   font-size: 10px; color: #ff5555;
