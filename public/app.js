@@ -644,7 +644,7 @@ const FILTERS = [
 function matchesFilter(app, filter) {
   if (filter === 'all') return true;
   const p = app.price_overview;
-  if (!p) return filter === 'free' ? false : true;
+  if (!p || p.final == null) return false;
   if (filter === 'free') return p.final === 0;
   if (filter === 'promo') return p.discount_percent > 0;
   if (filter === 'bigdiscount') return p.discount_percent >= 50;
@@ -660,10 +660,29 @@ async function loadFeatured() {
     ).join('');
   }
   try {
-    const results = await Promise.allSettled(POPULAR_IDS.map(id => fetchJson(`/api/app/${id}`)));
-    allApps = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+    // Load first 12 immediately
+    const firstBatch = await Promise.allSettled(POPULAR_IDS.slice(0, 12).map(id => fetchJson(`/api/app/${id}`)));
+    allApps = firstBatch.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
     loadedCount = 0;
     renderFeatured();
+    // Load remaining in background
+    const rest = POPULAR_IDS.slice(12);
+    if (rest.length) {
+      const remaining = await Promise.allSettled(rest.map(id => fetchJson(`/api/app/${id}`)));
+      const more = remaining.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+      allApps = allApps.concat(more);
+      // Re-render with full data if filter is active (might have more matches now)
+      if (currentFilter !== 'all') renderFeatured();
+      else {
+        // Update load more count
+        const container = document.getElementById('loadMoreContainer');
+        const filtered = allApps.filter(a => matchesFilter(a, currentFilter));
+        const remainingCount = filtered.length - loadedCount;
+        if (container && remainingCount > 0) {
+          container.innerHTML = `<button class="btn" onclick="loadMore()" style="padding:8px 24px">Voir plus (${remainingCount})</button>`;
+        }
+      }
+    }
   } catch (err) {
     featuredGrid.innerHTML = '<div style="grid-column:1/-1;color:#ff5555">Erreur de chargement</div>';
   }
