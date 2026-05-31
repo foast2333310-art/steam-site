@@ -217,7 +217,7 @@ async function showDetail(appId) {
       .slice(0, 10);
 
     const fullDesc = await translateFr((app.about_the_game || app.detailed_description || '').replace(/<[^>]*>/g, '').slice(0, 5000));
-    const searchTexts = [desc, fullDesc || ''];
+    const searchTexts = [desc, fullDesc || '', legal || ''];
     const { drm, ac } = detectProtections(searchTexts, appId);
     const fsStatus = checkFamilySharing(searchTexts);
     const drmHtml = drm.length

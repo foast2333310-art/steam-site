@@ -88,7 +88,7 @@ app.get('/api/translate', async (req, res) => {
 
 app.get('/api/denuvo', (req, res) => {
   try {
-    const data = JSON.parse(require('fs').readFileSync('./data/denuvo.json'));
+    const data = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'data/denuvo.json')));
     res.json(data.games);
   } catch (err) {
     res.json([]);
@@ -97,7 +97,7 @@ app.get('/api/denuvo', (req, res) => {
 
 app.get('/api/anticheat', (req, res) => {
   try {
-    const data = JSON.parse(require('fs').readFileSync('./data/anticheat.json'));
+    const data = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'data/anticheat.json')));
     res.json(data.games);
   } catch (err) {
     res.json({});
